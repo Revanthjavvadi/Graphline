@@ -555,46 +555,6 @@
   .app-only-note .app-warn{color:var(--amber); flex:0 0 auto; font-size:14px; line-height:1.4;}
   .app-only-note b{color:var(--text);}
 
-  /* ---------- Rating widget ---------- */
-  .rating-widget{
-    margin:0 18px 18px; padding:14px 16px; border-radius:10px;
-    background:var(--surface-2); border:1px solid var(--border-soft);
-    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
-  }
-  .rating-stars{display:flex; gap:3px; flex:0 0 auto;}
-  .rw-star{
-    width:22px; height:22px; cursor:pointer; color:var(--border);
-    transition:color .12s ease, transform .1s ease;
-  }
-  .rw-star:hover{transform:scale(1.12);}
-  .rw-star.filled{color:var(--amber);}
-  .rw-star.preview{color:var(--amber); opacity:0.55;}
-  .rating-summary{
-    display:flex; flex-direction:column; gap:2px; flex:1 1 auto; min-width:160px;
-  }
-  .rating-avg-row{display:flex; align-items:baseline; gap:7px;}
-  .rating-avg{font-family:var(--mono); font-size:16px; font-weight:600; color:var(--text);}
-  .rating-count{font-family:var(--mono); font-size:11.5px; color:var(--text-dim);}
-  .rating-helpful{font-size:12px; color:var(--text-dim);}
-  .rating-your-vote{
-    font-family:var(--mono); font-size:11px; color:var(--accent);
-    display:flex; align-items:center; gap:5px;
-  }
-  .rating-cta{
-    font-family:var(--mono); font-size:11.5px; color:var(--text-faint);
-  }
-  .rating-clear{
-    font-family:var(--mono); font-size:10.5px; color:var(--text-faint);
-    background:none; border:none; cursor:pointer; text-decoration:underline; padding:0;
-    margin-left:4px;
-  }
-  .rating-clear:hover{color:var(--danger);}
-  .rating-toast{
-    font-family:var(--mono); font-size:11px; color:var(--accent); opacity:0;
-    transition:opacity .2s ease;
-  }
-  .rating-toast.show{opacity:1;}
-
   footer{
     max-width:1320px; margin:0 auto; padding:30px 24px 60px;
     border-top:1px solid var(--border-soft);
@@ -1922,72 +1882,6 @@ function saveFavs(set){
 }
 let favorites = loadFavs();
 
-// ---------- Ratings (localStorage) ----------
-// Data model, per script id (item.n):
-//   ratings[n] = { total: <sum of all votes>, count: <number of votes> }
-// The current browser's own vote is tracked separately in myVotes so a
-// visitor can see/change their vote without it inflating the total twice.
-// NOTE: this is a client-side, per-browser store — there is no backend here,
-// so counts reflect votes cast in THIS browser profile only. Swap loadRatings/
-// saveRatings for fetch() calls to a real API to make this a shared, cross-
-// visitor aggregate without touching any of the rendering code below.
-const RATINGS_KEY = 'graphline_ratings_v1';
-const MY_VOTES_KEY = 'graphline_my_votes_v1';
-
-function loadRatings(){
-  try { return JSON.parse(localStorage.getItem(RATINGS_KEY) || '{}'); }
-  catch(e){ return {}; }
-}
-function saveRatings(obj){
-  try { localStorage.setItem(RATINGS_KEY, JSON.stringify(obj)); } catch(e){}
-}
-function loadMyVotes(){
-  try { return JSON.parse(localStorage.getItem(MY_VOTES_KEY) || '{}'); }
-  catch(e){ return {}; }
-}
-function saveMyVotes(obj){
-  try { localStorage.setItem(MY_VOTES_KEY, JSON.stringify(obj)); } catch(e){}
-}
-let ratings = loadRatings();
-let myVotes = loadMyVotes();
-
-function getRatingStats(id){
-  const r = ratings[id] || { total: 0, count: 0 };
-  const avg = r.count ? r.total / r.count : 0;
-  return { avg, count: r.count, myVote: myVotes[id] || 0 };
-}
-
-// Cast or change a vote for a script. If the visitor already voted, their
-// previous score is removed from the running total before the new one is
-// added, so changing a 3-star vote to a 5-star doesn't double-count.
-function castVote(id, stars){
-  const r = ratings[id] || { total: 0, count: 0 };
-  const previous = myVotes[id] || 0;
-  if (previous > 0){
-    r.total = r.total - previous + stars;
-  } else {
-    r.total += stars;
-    r.count += 1;
-  }
-  ratings[id] = r;
-  myVotes[id] = stars;
-  saveRatings(ratings);
-  saveMyVotes(myVotes);
-}
-
-function clearVote(id){
-  const r = ratings[id];
-  const previous = myVotes[id] || 0;
-  if (r && previous > 0){
-    r.total -= previous;
-    r.count = Math.max(0, r.count - 1);
-    ratings[id] = r;
-    saveRatings(ratings);
-  }
-  delete myVotes[id];
-  saveMyVotes(myVotes);
-}
-
 function updateQuickStats(){
   document.getElementById('qsTotal').textContent = ALL.length;
   document.getElementById('qsCats').textContent = DATA.length;
@@ -2268,7 +2162,6 @@ function cardHtml(item){
         <span class="app-warn">⚠</span> App-only auth needs this scope granted as an <b>Application permission</b> (with admin consent) in Entra ID — the same scope name may exist as Delegated-only for some Graph endpoints. Verify in the app registration's API permissions blade before relying on this in production.
       </div>
       ${item.note ? `<div class="note">${escapeHtml(item.note)}</div>` : ''}
-      ${ratingWidgetHtml(item)}
     </div>
   </div>`;
 }
@@ -2288,35 +2181,6 @@ function estimateSetupTime(item){
   if (lines <= 6) return '~2 min — copy, fill placeholders, run';
   if (lines <= 14) return '~5 min — review before running';
   return '~10 min — read fully, test in a pilot group first';
-}
-
-function ratingWidgetHtml(item){
-  const { avg, count, myVote } = getRatingStats(item.n);
-  const displayAvg = count ? avg.toFixed(1) : '—';
-  const starsHtml = [1,2,3,4,5].map(i => {
-    const filled = myVote ? i <= myVote : i <= Math.round(avg);
-    return `<span class="rw-star ${filled?'filled':''}" data-star="${i}" data-id="${item.n}" role="button" tabindex="0" aria-label="Rate ${i} star${i>1?'s':''}">${filled?svgStarFilled:svgStar}</span>`;
-  }).join('');
-
-  return `
-  <div class="rating-widget" data-rating-for="${item.n}">
-    <div class="rating-stars" data-star-row="${item.n}">${starsHtml}</div>
-    <div class="rating-summary">
-      <div class="rating-avg-row">
-        <span class="rating-avg">${displayAvg}</span>
-        <span class="rating-count">${count ? `${count} rating${count===1?'':'s'}` : 'No ratings yet — be the first'}</span>
-      </div>
-      <div class="rating-helpful" data-helpful="${item.n}">${helpfulLine(count)}</div>
-    </div>
-    ${myVote ? `<span class="rating-your-vote" data-your-vote="${item.n}">${svgCheck} You rated ${myVote}★ <button class="rating-clear" data-clear="${item.n}">undo</button></span>` : `<span class="rating-cta">Rate this script</span>`}
-    <span class="rating-toast" data-toast="${item.n}">Saved</span>
-  </div>`;
-}
-
-function helpfulLine(count){
-  if (!count) return 'Ratings help other admins pick the right script fast.';
-  if (count === 1) return '1 admin found this useful.';
-  return `${count} admins found this useful.`;
 }
 
 function getFilteredItems(){
@@ -2452,79 +2316,6 @@ function attachCardEvents(){
   });
 
 }
-
-// Re-renders just the inside of one rating widget (star row, average, count,
-// vote badge) without touching the rest of the card — keeps the card open
-// and avoids a full list re-render every time someone clicks a star.
-function refreshRatingWidget(id){
-  const widget = resultsEl.querySelector(`.rating-widget[data-rating-for="${id}"]`);
-  if (!widget) return;
-  const item = ALL.find(i => i.n === id);
-  if (!item) return;
-  widget.outerHTML = ratingWidgetHtml(item);
-}
-
-function flashToast(id){
-  const toast = resultsEl.querySelector(`[data-toast="${id}"]`);
-  if (!toast) return;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 1200);
-}
-
-// Event delegation for the rating widgets: bound ONCE on resultsEl instead of
-// per-star, so re-rendering a single widget's innerHTML never needs — and
-// never risks — re-attaching (and duplicating) listeners.
-resultsEl.addEventListener('click', (e) => {
-  const star = e.target.closest('.rw-star');
-  if (star){
-    e.stopPropagation();
-    const id = Number(star.getAttribute('data-id'));
-    const value = Number(star.getAttribute('data-star'));
-    castVote(id, value);
-    refreshRatingWidget(id);
-    flashToast(id);
-    return;
-  }
-  const clearBtn = e.target.closest('[data-clear]');
-  if (clearBtn){
-    e.stopPropagation();
-    const id = Number(clearBtn.getAttribute('data-clear'));
-    clearVote(id);
-    refreshRatingWidget(id);
-  }
-});
-
-resultsEl.addEventListener('keydown', (e) => {
-  const star = e.target.closest('.rw-star');
-  if (star && (e.key === 'Enter' || e.key === ' ')){
-    e.preventDefault(); e.stopPropagation();
-    const id = Number(star.getAttribute('data-id'));
-    const value = Number(star.getAttribute('data-star'));
-    castVote(id, value);
-    refreshRatingWidget(id);
-    flashToast(id);
-  }
-});
-
-resultsEl.addEventListener('mouseover', (e) => {
-  const star = e.target.closest('.rw-star');
-  if (!star) return;
-  const value = Number(star.getAttribute('data-star'));
-  const row = star.closest('.rating-stars');
-  row.querySelectorAll('.rw-star').forEach(s => {
-    const sv = Number(s.getAttribute('data-star'));
-    s.classList.toggle('preview', sv <= value && !s.classList.contains('filled'));
-  });
-});
-
-resultsEl.addEventListener('mouseout', (e) => {
-  const star = e.target.closest('.rw-star');
-  if (!star) return;
-  const row = star.closest('.rating-stars');
-  if (row && !row.contains(e.relatedTarget)){
-    row.querySelectorAll('.rw-star').forEach(s => s.classList.remove('preview'));
-  }
-});
 
 // ---------- Filter bar events ----------
 sortSelect.addEventListener('change', () => {
