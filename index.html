@@ -1,0 +1,2652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Graphline — Script Library for M365 &amp; Intune Admins</title>
+<meta name="description" content="Graphline pairs real Intune/M365 admin pain points with ready Microsoft Graph PowerShell (SDK) scripts and raw Graph API calls, plus the exact permission scope each one needs.">
+<meta property="og:title" content="Graphline — Script Library for M365 &amp; Intune Admins">
+<meta property="og:description" content="Copy-paste Graph API &amp; PowerShell for recurring Intune admin tasks. Searchable, filterable, zero-dependency.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0A0E14">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234FD8BE'/%3E%3Cstop offset='1' stop-color='%237C8CFF'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='%230D1117'/%3E%3Cpath d='M22 62 L40 40 L58 54 L78 30' stroke='url(%23g)' stroke-width='9' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='78' cy='30' r='7' fill='%234FD8BE'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E14;
+    --bg-2:#0D1219;
+    --surface:#121822;
+    --surface-2:#161E2A;
+    --surface-3:#1E2A3A;
+    --border:#2A3644;
+    --border-soft:#1E2937;
+    --text:#FFFFFF;
+    --text-dim:#C7D0DC;
+    --text-faint:#9AA7B8;
+    --accent:#5CEBCF;
+    --accent-2:#93A0FF;
+    --accent-dim:#3AA694;
+    --amber:#F2C270;
+    --danger:#FF8A80;
+    --danger-dim:#B0554E;
+    --safe:#5CEBCF;
+    --radius:14px;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+    --sans:'Space Grotesk', system-ui, sans-serif;
+    color-scheme: dark;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  ::selection{background:rgba(79,216,190,0.25); color:#fff;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    overflow-x:hidden;
+  }
+  html{scroll-padding-top:env(safe-area-inset-top,0px); scroll-behavior:smooth;}
+  a{color:inherit;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+
+  /* ---------- Ambient background ---------- */
+  .aurora{
+    position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+  }
+  .aurora::before, .aurora::after{
+    content:''; position:absolute; width:60vw; height:60vw; border-radius:50%;
+    filter:blur(90px); opacity:0.16; will-change:transform;
+  }
+  .aurora::before{
+    background:radial-gradient(circle, var(--accent), transparent 70%);
+    top:-20vw; left:-10vw; animation:driftA 22s ease-in-out infinite alternate;
+  }
+  .aurora::after{
+    background:radial-gradient(circle, var(--accent-2), transparent 70%);
+    bottom:-25vw; right:-15vw; animation:driftB 26s ease-in-out infinite alternate;
+  }
+  @keyframes driftA{ 0%{transform:translate(0,0) scale(1);} 100%{transform:translate(6vw,8vw) scale(1.15);} }
+  @keyframes driftB{ 0%{transform:translate(0,0) scale(1);} 100%{transform:translate(-5vw,-6vw) scale(1.1);} }
+
+  .grain{
+    position:fixed; inset:0; z-index:1; pointer-events:none; opacity:0.025; mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ---------- Top bar ---------- */
+  header.top{
+    position:sticky; top:env(safe-area-inset-top,0px); z-index:30;
+    background:rgba(10,14,20,0.78);
+    backdrop-filter: blur(14px) saturate(140%);
+    border-bottom:1px solid var(--border);
+    padding:16px 24px;
+    animation: dropIn .5s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes dropIn{ from{transform:translateY(-14px); opacity:0;} to{transform:translateY(0); opacity:1;} }
+
+  .top-inner{
+    max-width:1320px; margin:0 auto;
+    display:flex; align-items:center; gap:20px; flex-wrap:wrap;
+  }
+  .brand{
+    display:flex; align-items:center; gap:12px; flex:0 0 auto;
+  }
+  .brand-logo{
+    width:38px; height:38px; border-radius:11px; flex:0 0 auto;
+    background:linear-gradient(135deg, var(--accent), var(--accent-2));
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.08) inset, 0 6px 18px -6px rgba(79,216,190,0.5);
+    position:relative;
+  }
+  .brand-logo svg{width:20px; height:20px; color:#0A0E14;}
+  .brand-text h1{
+    font-size:18px; font-weight:700; margin:0; letter-spacing:-0.01em;
+    background:linear-gradient(90deg, var(--text), var(--text) 60%, var(--accent));
+    -webkit-background-clip:text; background-clip:text;
+  }
+  .brand-text p{
+    margin:0; font-size:12px; color:var(--text-dim); font-family:var(--mono);
+  }
+  .search-wrap{
+    flex:1 1 320px; min-width:220px; position:relative;
+  }
+  .search-wrap input{
+    width:100%; background:var(--surface-2); border:1px solid var(--border);
+    color:var(--text); font-family:var(--sans); font-size:14.5px;
+    padding:11px 44px 11px 40px; border-radius:10px; outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease, background .2s ease;
+  }
+  .search-wrap input:focus{
+    border-color:var(--accent-dim);
+    box-shadow:0 0 0 3px rgba(79,216,190,0.12);
+    background:var(--surface-3);
+  }
+  .search-wrap input::placeholder{color:var(--text-faint);}
+  .search-icon{
+    position:absolute; left:13px; top:50%; transform:translateY(-50%);
+    width:15px; height:15px; opacity:0.5; pointer-events:none;
+  }
+  .kbd-hint{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    font-family:var(--mono); font-size:10.5px; color:var(--text-faint);
+    border:1px solid var(--border); border-radius:5px; padding:2px 6px;
+    pointer-events:none;
+  }
+  .stat{
+    font-family:var(--mono); font-size:12px; color:var(--text-dim);
+    white-space:nowrap; display:flex; align-items:center; gap:6px;
+  }
+  .stat b{color:var(--accent); font-weight:600; font-size:13px;}
+  .live-dot{
+    width:6px; height:6px; border-radius:50%; background:var(--accent);
+    box-shadow:0 0 0 0 rgba(79,216,190,0.6);
+    animation:pulse 2s ease-out infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(79,216,190,0.55);}
+    70%{box-shadow:0 0 0 6px rgba(79,216,190,0);}
+    100%{box-shadow:0 0 0 0 rgba(79,216,190,0);}
+  }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    max-width:1320px; margin:0 auto; padding:40px 24px 8px;
+    position:relative; z-index:2;
+    display:grid; grid-template-columns:1fr 440px; gap:40px; align-items:start;
+  }
+  .hero-copy{min-width:0;}
+  .hero-eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:var(--mono); font-size:11.5px; color:var(--accent);
+    border:1px solid var(--accent-dim); background:rgba(79,216,190,0.06);
+    padding:5px 11px; border-radius:20px; margin-bottom:16px;
+    animation: fadeUp .6s ease both;
+  }
+  .hero h2{
+    font-size:clamp(26px, 4vw, 40px); margin:0 0 12px; font-weight:700; letter-spacing:-0.02em;
+    max-width:720px; line-height:1.12;
+    animation: fadeUp .6s ease .05s both;
+  }
+  .hero h2 .grad{
+    background:linear-gradient(90deg, var(--accent), var(--accent-2));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero p.sub{
+    margin:0 0 16px; color:var(--text-dim); font-size:15px; line-height:1.6; max-width:640px;
+    animation: fadeUp .6s ease .1s both;
+  }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+  .hero-formats{
+    list-style:none; margin:0 0 20px; padding:0; max-width:640px;
+    display:flex; flex-direction:column; gap:9px;
+    animation: fadeUp .6s ease .12s both;
+  }
+  .hero-formats li{
+    font-size:14.5px; color:var(--text-dim); line-height:1.5;
+    display:flex; align-items:baseline; gap:10px;
+  }
+  .hero-formats li b{color:var(--text); font-weight:600;}
+  .hf-dot{
+    width:8px; height:8px; border-radius:50%; flex:0 0 auto;
+    margin-top:5px; box-shadow:0 0 0 3px rgba(255,255,255,0.03);
+  }
+  .hf-dot.ps{background:var(--accent);}
+  .hf-dot.graph{background:var(--accent-2);}
+  .hf-dot.app{background:var(--amber);}
+
+  .hero-cta-line{
+    font-family:var(--mono); font-size:14px; color:var(--text); font-weight:600;
+    letter-spacing:0.01em;
+  }
+  .hero-audience{
+    max-width:600px;
+  }
+
+  /* ---------- Hero terminal mock ---------- */
+  .hero-terminal{
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    overflow:hidden; box-shadow:0 24px 60px -20px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.02) inset;
+    animation: fadeUp .6s ease .2s both, floatY 7s ease-in-out 1.2s infinite;
+    position:sticky; top:calc(96px + env(safe-area-inset-top,0px));
+  }
+  @keyframes floatY{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);} }
+  .hero-terminal-bar{
+    display:flex; align-items:center; gap:8px; padding:11px 14px;
+    background:var(--surface-2); border-bottom:1px solid var(--border-soft);
+  }
+  .hero-terminal-dot{width:9px; height:9px; border-radius:50%; flex:0 0 auto;}
+  .hero-terminal-dot.r{background:#FF6B6B;}
+  .hero-terminal-dot.y{background:#F2C270;}
+  .hero-terminal-dot.g{background:#5CEBCF;}
+  .hero-terminal-title{
+    font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-left:6px;
+  }
+  .hero-terminal-live{
+    margin-left:auto; display:flex; align-items:center; gap:5px;
+    font-family:var(--mono); font-size:10px; color:var(--accent); text-transform:uppercase; letter-spacing:.06em;
+  }
+  .hero-terminal-body{
+    padding:16px 16px 18px; font-family:var(--mono); font-size:12.5px; line-height:1.75;
+    min-height:280px; color:#C9D4DD;
+  }
+  .ht-line{white-space:pre-wrap; word-break:break-word; opacity:0; animation: htLineIn .35s ease forwards;}
+  .ht-prompt{color:var(--accent-2);}
+  .ht-cmd{color:var(--text);}
+  .ht-ok{color:var(--accent);}
+  .ht-comment{color:var(--text-faint); font-style:italic;}
+  .ht-cursor{
+    display:inline-block; width:7px; height:14px; background:var(--accent);
+    vertical-align:-2px; animation: caretBlink 1s step-end infinite;
+  }
+  @keyframes htLineIn{ from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:translateY(0);} }
+  @keyframes caretBlink{ 0%,50%{opacity:1;} 50.01%,100%{opacity:0;} }
+
+  @media (max-width: 980px){
+    .hero{grid-template-columns:1fr;}
+    .hero-terminal{position:static; margin-top:8px;}
+  }
+
+  .quick-stats{
+    display:flex; gap:28px; flex-wrap:wrap; margin-bottom:8px;
+    animation: fadeUp .6s ease .15s both;
+  }
+  .qs-item{font-family:var(--mono);}
+  .qs-item .n{font-size:22px; font-weight:600; color:var(--text);}
+  .qs-item .n.accent{color:var(--accent);}
+  .qs-item .n.danger{color:var(--danger);}
+  .qs-item .l{font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.05em;}
+
+  /* ---------- Active filter summary bar ---------- */
+  .filterbar{
+    max-width:1320px; margin:24px auto 0; padding:0 24px;
+    position:relative; z-index:2;
+  }
+  .filterbar-top{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    flex-wrap:wrap; padding-bottom:12px;
+  }
+  .filterbar-top-left{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .results-count{
+    font-family:var(--mono); font-size:13px; color:var(--text);
+  }
+  .results-count b{color:var(--accent);}
+  .sort-select{
+    font-family:var(--mono); font-size:12px; color:var(--text);
+    background:var(--surface-2); border:1px solid var(--border);
+    padding:8px 12px; border-radius:9px; cursor:pointer; outline:none;
+  }
+  .sort-select:hover{border-color:var(--accent-dim);}
+
+  .active-filters{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:0 0 14px; min-height:0;
+  }
+  .active-filters:empty{padding:0;}
+  .afchip{
+    font-family:var(--mono); font-size:11.5px; color:var(--text);
+    background:rgba(92,235,207,0.1); border:1px solid var(--accent-dim);
+    padding:5px 6px 5px 11px; border-radius:16px; display:inline-flex; align-items:center; gap:8px;
+  }
+  .afchip .afx{
+    width:16px; height:16px; border-radius:50%; background:rgba(255,255,255,0.08);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:11px;
+    color:var(--text-dim); transition:all .15s ease; flex:0 0 auto;
+  }
+  .afchip .afx:hover{background:var(--danger); color:#1a0a0a;}
+  .clear-filters{
+    font-family:var(--mono); font-size:11.5px; color:var(--text-dim);
+    background:none; border:1px dashed var(--border); padding:6px 12px;
+    border-radius:16px; cursor:pointer; transition:all .15s ease;
+  }
+  .clear-filters:hover{color:var(--danger); border-color:var(--danger-dim);}
+
+  /* ---------- Layout ---------- */
+  .shell{
+    max-width:1320px; margin:0 auto;
+    display:grid; grid-template-columns:264px 1fr; gap:0;
+    align-items:start; position:relative; z-index:2;
+  }
+  nav.side{
+    position:sticky; top:calc(78px + env(safe-area-inset-top,0px));
+    padding:20px 16px 40px 24px;
+    max-height:calc(100vh - 100px);
+    overflow-y:auto;
+  }
+
+  /* ---------- Facets ---------- */
+  .facet{
+    border-bottom:1px solid var(--border-soft); padding-bottom:14px; margin-bottom:14px;
+  }
+  .facet:last-child{border-bottom:none;}
+  .facet-head{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    width:100%; background:none; border:none; cursor:pointer; padding:4px 2px 10px;
+    color:var(--text); font-family:var(--sans); font-size:13px; font-weight:600;
+    text-align:left;
+  }
+  .facet-head .fchev{
+    width:14px; height:14px; color:var(--text-faint); transition:transform .2s ease; flex:0 0 auto;
+  }
+  .facet.collapsed .fchev{transform:rotate(-90deg);}
+  .facet.collapsed .facet-body{display:none;}
+  .facet-body{display:flex; flex-direction:column; gap:2px;}
+
+  .facet-opt{
+    display:flex; align-items:center; gap:9px;
+    width:100%; text-align:left; background:none; border:none; cursor:pointer;
+    color:var(--text-dim); font-family:var(--sans); font-size:13.5px;
+    padding:7px 8px; border-radius:8px; margin-bottom:1px;
+    transition:background .15s ease, color .15s ease;
+  }
+  .facet-opt:hover{background:var(--surface-2); color:var(--text);}
+  .facet-opt.active{background:rgba(92,235,207,0.1); color:var(--accent);}
+  .facet-opt .fo-box{
+    width:15px; height:15px; border-radius:5px; border:1.5px solid var(--border);
+    flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+    transition:all .15s ease; background:var(--surface-2);
+  }
+  .facet-opt .fo-box svg{width:10px; height:10px; opacity:0; transition:opacity .12s ease; color:#08110F;}
+  .facet-opt.active .fo-box{background:var(--accent); border-color:var(--accent);}
+  .facet-opt.active .fo-box svg{opacity:1;}
+  .facet-opt .fo-dot{
+    width:8px; height:8px; border-radius:50%; flex:0 0 auto;
+  }
+  .facet-opt .fo-label{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .facet-opt .fo-count{
+    font-family:var(--mono); font-size:11px; color:var(--text-faint);
+    background:var(--surface-2); padding:1px 7px; border-radius:8px; flex:0 0 auto;
+  }
+  .facet-opt.active .fo-count{color:var(--accent); background:rgba(92,235,207,0.14);}
+  .facet-opt:disabled, .facet-opt.zero{opacity:0.35; cursor:not-allowed;}
+
+  .facet-search{
+    width:100%; background:var(--surface-2); border:1px solid var(--border);
+    color:var(--text); font-family:var(--sans); font-size:12.5px;
+    padding:7px 10px; border-radius:8px; outline:none; margin-bottom:8px;
+  }
+  .facet-search:focus{border-color:var(--accent-dim);}
+  .facet-more{
+    font-family:var(--mono); font-size:11px; color:var(--accent-2);
+    background:none; border:none; cursor:pointer; padding:6px 8px; text-align:left;
+  }
+  .facet-more:hover{text-decoration:underline;}
+
+  main{
+    padding:22px 24px 80px;
+    border-left:1px solid var(--border-soft);
+    min-width:0;
+  }
+
+  .empty{
+    padding:70px 20px; text-align:center; color:var(--text-faint);
+    font-family:var(--mono); font-size:13.5px;
+    animation: fadeUp .4s ease both;
+  }
+  .empty .emoji{font-size:32px; display:block; margin-bottom:12px; opacity:0.6;}
+
+  /* ---------- Card ---------- */
+  .group-title{
+    font-family:var(--mono); font-size:12px; color:var(--text-dim);
+    text-transform:uppercase; letter-spacing:.08em;
+    margin:28px 0 12px; padding-bottom:8px; border-bottom:1px solid var(--border-soft);
+    display:flex; align-items:center; gap:8px;
+  }
+  .group-title:first-child{margin-top:0;}
+  .group-title .glyph{color:var(--accent-2);}
+
+  .card{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); margin-bottom:12px; overflow:hidden;
+    transition:border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+    opacity:0; transform:translateY(10px);
+    animation: cardIn .45s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  @keyframes cardIn{ to{opacity:1; transform:translateY(0);} }
+  .card:hover{border-color:var(--border-soft); box-shadow:0 8px 30px -14px rgba(0,0,0,0.5);}
+  .card.open{border-color:var(--accent-dim); box-shadow:0 0 0 1px rgba(79,216,190,0.1), 0 12px 34px -16px rgba(79,216,190,0.15);}
+  .card.fav{border-color:rgba(227,169,76,0.4);}
+
+  .card-head{
+    padding:16px 18px; cursor:pointer; display:flex; gap:14px; align-items:flex-start;
+    width:100%; background:none; border:none; text-align:left; font-family:inherit; color:inherit;
+    transition:background .15s ease;
+  }
+  .card-head:hover{background:rgba(255,255,255,0.015);}
+  .card-head:focus-visible{outline:2px solid var(--accent); outline-offset:-2px;}
+  .card-num{
+    font-family:var(--mono); font-size:12px; color:var(--text-dim);
+    padding-top:2px; flex:0 0 auto; width:24px;
+  }
+  .card-main{flex:1; min-width:0;}
+  .card-title-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:5px;}
+  .card-title{
+    font-size:15px; font-weight:600; margin:0; letter-spacing:-0.005em;
+  }
+  .risk-badge{
+    font-family:var(--mono); font-size:9.5px; text-transform:uppercase; letter-spacing:.04em;
+    padding:2px 7px; border-radius:5px; flex:0 0 auto;
+  }
+  .risk-badge.safe{color:var(--safe); background:rgba(79,216,190,0.1); border:1px solid rgba(79,216,190,0.25);}
+  .risk-badge.destructive{color:var(--danger); background:rgba(255,107,107,0.1); border:1px solid rgba(255,107,107,0.3);}
+  .card-pain{
+    font-size:13.5px; color:var(--text-dim); line-height:1.5; margin:0;
+  }
+  .card-tags{
+    display:flex; gap:6px; margin-top:9px; flex-wrap:wrap;
+  }
+  .tag{
+    font-family:var(--mono); font-size:10.5px; color:var(--text-dim);
+    border:1px solid var(--border); padding:2px 7px; border-radius:4px;
+    background:rgba(255,255,255,0.02);
+  }
+  .card-side-actions{display:flex; align-items:center; gap:6px; flex:0 0 auto;}
+  .fav-btn{
+    width:30px; height:30px; border-radius:8px; border:1px solid transparent; background:none;
+    color:var(--text-faint); cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:all .15s ease; flex:0 0 auto;
+  }
+  .fav-btn:hover{background:var(--surface-2); color:var(--amber);}
+  .fav-btn.on{color:var(--amber);}
+  .fav-btn svg{width:16px; height:16px;}
+  .chev{
+    flex:0 0 auto; width:18px; height:18px; color:var(--text-faint);
+    transition:transform .25s cubic-bezier(.2,.8,.2,1); margin-top:4px;
+  }
+  .card.open .chev{transform:rotate(180deg); color:var(--accent);}
+
+  .card-body{
+    max-height:0; overflow:hidden; border-top:0 solid var(--border-soft);
+    transition:max-height .3s cubic-bezier(.2,.8,.2,1);
+  }
+  .card.open .card-body{border-top-width:1px;}
+
+  .quick-facts{
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:1px;
+    background:var(--border-soft); border-bottom:1px solid var(--border-soft);
+  }
+  .qf-item{
+    background:var(--surface); padding:11px 16px; display:flex; flex-direction:column; gap:3px;
+  }
+  .qf-label{
+    font-family:var(--mono); font-size:10px; color:var(--text-faint);
+    text-transform:uppercase; letter-spacing:.06em;
+  }
+  .qf-val{font-size:12.5px; color:var(--text); line-height:1.4;}
+  .qf-val.qf-safe{color:var(--safe);}
+  .qf-val.qf-danger{color:var(--danger);}
+  @media (max-width: 640px){
+    .quick-facts{grid-template-columns:1fr;}
+  }
+
+  .perm-row{
+    padding:12px 18px; font-size:12.5px; color:var(--text-dim);
+    border-bottom:1px solid var(--border-soft); background:rgba(255,255,255,0.012);
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  }
+  .perm-row .perm-label{color:var(--text-dim); font-family:var(--mono); font-size:11px;}
+  .perm-chip{
+    font-family:var(--mono); font-size:11px; color:var(--amber);
+    background:rgba(227,169,76,0.08); border:1px solid rgba(227,169,76,0.25);
+    padding:2px 8px; border-radius:4px;
+  }
+  .module-chip{
+    font-family:var(--mono); font-size:11px; color:var(--accent-2);
+    background:rgba(124,140,255,0.08); border:1px solid rgba(124,140,255,0.25);
+    padding:2px 8px; border-radius:4px;
+  }
+
+  .tabs{
+    display:flex; gap:2px; padding:10px 18px 0;
+  }
+  .tab-btn{
+    font-family:var(--mono); font-size:12px; background:none; border:none;
+    color:var(--text-dim); padding:7px 12px; cursor:pointer; border-radius:6px 6px 0 0;
+    border:1px solid transparent; transition:color .15s ease;
+  }
+  .tab-btn.active{
+    color:var(--accent); background:var(--surface-2);
+    border-color:var(--border-soft); border-bottom-color:var(--surface-2);
+  }
+
+  .code-wrap{
+    position:relative; background:var(--surface-2);
+    margin:0 18px 18px; border-radius:0 8px 8px 8px; border:1px solid var(--border-soft);
+  }
+  .code-wrap.hidden{display:none;}
+  pre{
+    margin:0; padding:16px; overflow-x:auto;
+    font-family:var(--mono); font-size:12.5px; line-height:1.6; color:#C9D4DD;
+  }
+  pre .c{color:var(--text-faint); font-style:italic;}
+  .copy-btn{
+    position:absolute; top:10px; right:10px;
+    font-family:var(--mono); font-size:11px; color:var(--text);
+    background:var(--surface); border:1px solid var(--border);
+    padding:5px 10px; border-radius:6px; cursor:pointer;
+    transition:color .12s ease, border-color .12s ease, transform .12s ease;
+    display:flex; align-items:center; gap:5px;
+  }
+  .copy-btn svg{width:12px; height:12px;}
+  .copy-btn:hover{color:var(--accent); border-color:var(--accent-dim);}
+  .copy-btn.copied{color:var(--accent); border-color:var(--accent-dim); transform:scale(1.05);}
+
+  .note{
+    margin:0 18px 18px; font-size:12.5px; color:var(--text-dim);
+    padding:10px 12px; border-left:2px solid var(--accent-dim);
+    background:rgba(79,216,190,0.04); line-height:1.5; border-radius:0 6px 6px 0;
+  }
+
+  .app-only-note{
+    margin:0 18px 18px; font-size:12.5px; color:var(--text-dim);
+    padding:10px 12px; border-left:2px solid var(--amber);
+    background:rgba(242,194,112,0.06); line-height:1.5; border-radius:0 6px 6px 0;
+    display:flex; gap:8px; align-items:flex-start;
+  }
+  .app-only-note.hidden{display:none;}
+  .app-only-note .app-warn{color:var(--amber); flex:0 0 auto; font-size:14px; line-height:1.4;}
+  .app-only-note b{color:var(--text);}
+
+  /* ---------- Rating widget ---------- */
+  .rating-widget{
+    margin:0 18px 18px; padding:14px 16px; border-radius:10px;
+    background:var(--surface-2); border:1px solid var(--border-soft);
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  .rating-stars{display:flex; gap:3px; flex:0 0 auto;}
+  .rw-star{
+    width:22px; height:22px; cursor:pointer; color:var(--border);
+    transition:color .12s ease, transform .1s ease;
+  }
+  .rw-star:hover{transform:scale(1.12);}
+  .rw-star.filled{color:var(--amber);}
+  .rw-star.preview{color:var(--amber); opacity:0.55;}
+  .rating-summary{
+    display:flex; flex-direction:column; gap:2px; flex:1 1 auto; min-width:160px;
+  }
+  .rating-avg-row{display:flex; align-items:baseline; gap:7px;}
+  .rating-avg{font-family:var(--mono); font-size:16px; font-weight:600; color:var(--text);}
+  .rating-count{font-family:var(--mono); font-size:11.5px; color:var(--text-dim);}
+  .rating-helpful{font-size:12px; color:var(--text-dim);}
+  .rating-your-vote{
+    font-family:var(--mono); font-size:11px; color:var(--accent);
+    display:flex; align-items:center; gap:5px;
+  }
+  .rating-cta{
+    font-family:var(--mono); font-size:11.5px; color:var(--text-faint);
+  }
+  .rating-clear{
+    font-family:var(--mono); font-size:10.5px; color:var(--text-faint);
+    background:none; border:none; cursor:pointer; text-decoration:underline; padding:0;
+    margin-left:4px;
+  }
+  .rating-clear:hover{color:var(--danger);}
+  .rating-toast{
+    font-family:var(--mono); font-size:11px; color:var(--accent); opacity:0;
+    transition:opacity .2s ease;
+  }
+  .rating-toast.show{opacity:1;}
+
+  footer{
+    max-width:1320px; margin:0 auto; padding:30px 24px 60px;
+    border-top:1px solid var(--border-soft);
+    font-size:12.5px; color:var(--text-dim); line-height:1.6;
+    position:relative; z-index:2;
+    display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap;
+  }
+  footer .fbrand{font-family:var(--mono); color:var(--text-dim);}
+
+  /* scrollbar */
+  ::-webkit-scrollbar{width:10px; height:10px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--surface-3); border-radius:6px; border:2px solid var(--bg);}
+  ::-webkit-scrollbar-thumb:hover{background:var(--border);}
+
+  @media (max-width: 860px){
+    .shell{grid-template-columns:1fr;}
+    nav.side{
+      position:static; max-height:none; padding:14px 20px 0;
+      display:flex; gap:6px; overflow-x:auto; white-space:nowrap;
+    }
+    nav.side .cat-btn{width:auto; flex:0 0 auto;}
+    nav.side .cat-btn::before{display:none;}
+    main{border-left:none; padding:18px 20px 60px;}
+    .quick-stats{gap:18px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="aurora"></div>
+<div class="grain"></div>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15 L9 9 L14 12 L20 5"/><circle cx="20" cy="5" r="1.6" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <div class="brand-text">
+        <h1>Graphline</h1>
+        <p>Graph API &amp; PowerShell playbook for M365 admins</p>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="search" type="text" placeholder="Search — “sync devices”, “non-compliant”, “autopilot”…" autocomplete="off">
+      <span class="kbd-hint">/</span>
+    </div>
+    <div class="stat" id="stat"><span class="live-dot"></span><b>20</b> scripts</div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-copy">
+    <span class="hero-eyebrow">⚡ Live, tenant-ready scripts</span>
+    <h2>Stop rewriting Graph queries.<br>Start <span class="grad">running</span> them.</h2>
+    <p class="sub">Get a curated collection of production-ready Microsoft Graph scripts designed for real-world Microsoft 365 and Intune administration. Each use case gives you the complete solution:</p>
+    <ul class="hero-formats">
+      <li><span class="hf-dot ps"></span><b>PowerShell SDK</b> — ready to run and automate</li>
+      <li><span class="hf-dot graph"></span><b>Microsoft Graph API</b> — raw REST request for direct integration</li>
+      <li><span class="hf-dot app"></span><b>App-only authentication</b> — built for unattended automation and service workflows</li>
+    </ul>
+    <p class="sub hero-cta-line">Find it. Copy it. Configure it. Run it.</p>
+    <p class="sub hero-audience">Built for M365 engineers, Intune admins, and automation teams who want to spend less time writing queries and more time getting things done.</p>
+    <div class="quick-stats">
+      <div class="qs-item"><div class="n" id="qsTotal">20</div><div class="l">Scripts</div></div>
+      <div class="qs-item"><div class="n accent" id="qsCats">8</div><div class="l">Categories</div></div>
+      <div class="qs-item"><div class="n danger" id="qsDanger">—</div><div class="l">Destructive</div></div>
+      <div class="qs-item"><div class="n" id="qsFav">0</div><div class="l">Favorited</div></div>
+    </div>
+  </div>
+
+  <div class="hero-terminal">
+    <div class="hero-terminal-bar">
+      <span class="hero-terminal-dot r"></span>
+      <span class="hero-terminal-dot y"></span>
+      <span class="hero-terminal-dot g"></span>
+      <span class="hero-terminal-title">graphline — pwsh</span>
+      <span class="hero-terminal-live"><span class="live-dot"></span>live</span>
+    </div>
+    <div class="hero-terminal-body" id="heroTerminal"></div>
+  </div>
+</section>
+
+<div class="filterbar">
+  <div class="filterbar-top">
+    <div class="filterbar-top-left">
+      <span class="results-count" id="stat2"></span>
+    </div>
+    <select class="sort-select" id="sortSelect">
+      <option value="default">Sort: Default order</option>
+      <option value="az">Sort: A → Z</option>
+      <option value="za">Sort: Z → A</option>
+      <option value="category">Sort: By category</option>
+      <option value="risk">Sort: Risk (destructive first)</option>
+    </select>
+  </div>
+  <div class="active-filters" id="activeFilters"></div>
+</div>
+
+<div class="shell">
+  <nav class="side" id="sidenav"></nav>
+  <main>
+    <div id="results"></div>
+    <div class="empty" id="emptyState" style="display:none;">
+      <span class="emoji">◌</span>
+      No scripts match those filters. Try clearing a facet or the search box.
+    </div>
+  </main>
+</div>
+
+<footer>
+  <div>Scripts target Microsoft Graph v1.0 and the Microsoft.Graph PowerShell SDK v2. Review scopes and test in a non-production tenant before running against production devices — several actions here are irreversible (wipe, retire, remote actions).</div>
+  <div class="fbrand">Graphline</div>
+</footer>
+
+<script>
+const DATA = [
+{
+  cat:"Device Actions",
+  glyph:"▣",
+  items:[
+    {
+      title:"Bulk sync a group of devices",
+      pain:"Forcing a policy or app to land fast means syncing devices one by one in the portal, or waiting for the next check-in cycle.",
+      tags:["sync","bulk","devices"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementManagedDevices.PrivilegedOperations.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementManagedDevices.PrivilegedOperations.All"
+
+$groupId = "&lt;entra-group-id&gt;"
+$members = Get-MgGroupMember -GroupId $groupId -All
+
+foreach ($m in $members) {
+    $device = Get-MgDeviceManagementManagedDevice -Filter "azureADDeviceId eq '$($m.Id)'"
+    if ($device) {
+        Sync-MgDeviceManagementManagedDevice -ManagedDeviceId $device.Id
+        Write-Host "Synced: $($device.DeviceName)"
+    }
+}`,
+      graph:`# Sync a single device
+POST https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{managedDeviceId}/syncDevice
+
+# No request body required. Repeat per device ID for a bulk operation,
+# or batch with $batch (max 20 requests per batch call).`,
+      note:"syncDevice only requests the device check in sooner — it does not guarantee immediate policy application on the endpoint."
+    },
+    {
+      title:"Bulk remote restart by device name list",
+      pain:"After a config change you need a set of named devices to reboot to pick it up, without touching each one in the portal.",
+      tags:["restart","reboot","bulk"],
+      risk:"destructive",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementManagedDevices.PrivilegedOperations.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementManagedDevices.PrivilegedOperations.All"
+
+$deviceNames = Get-Content ".\\devices.txt"   # one device name per line
+
+foreach ($name in $deviceNames) {
+    $device = Get-MgDeviceManagementManagedDevice -Filter "deviceName eq '$name'"
+    if ($device) {
+        Invoke-MgRebootDeviceManagementManagedDevice -ManagedDeviceId $device.Id
+        Write-Host "Reboot queued: $name"
+    } else {
+        Write-Warning "Not found: $name"
+    }
+}`,
+      graph:`POST https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{managedDeviceId}/rebootNow
+
+# Body: none required`,
+      note:"rebootNow gives no user warning on Windows — confirm with change management before running against production devices."
+    },
+    {
+      title:"Retire stale devices (no check-in in N days)",
+      pain:"Dormant devices sit in the console consuming licenses and inflating counts, but nobody wants to hunt them down manually.",
+      tags:["retire","stale","cleanup","license"],
+      risk:"destructive",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementManagedDevices.PrivilegedOperations.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementManagedDevices.PrivilegedOperations.All"
+
+$cutoff = (Get-Date).AddDays(-90)
+$stale  = Get-MgDeviceManagementManagedDevice -All |
+          Where-Object { $_.LastSyncDateTime -lt $cutoff }
+
+$stale | Select-Object DeviceName, UserPrincipalName, LastSyncDateTime |
+         Export-Csv ".\\stale-devices.csv" -NoTypeInformation
+
+foreach ($d in $stale) {
+    # Uncomment once the CSV above has been reviewed
+    # Remove-MgDeviceManagementManagedDevice -ManagedDeviceId $d.Id -Confirm:$false
+    Write-Host "Would retire: $($d.DeviceName) — last seen $($d.LastSyncDateTime)"
+}`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=lastSyncDateTime le 2025-06-01T00:00:00Z
+
+POST https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{managedDeviceId}/retire`,
+      note:"Always export and review before the destructive call — the script ships with retirement commented out by default."
+    },
+    {
+      title:"Autopilot Fresh Start on a device group",
+      pain:"Re-provisioning a batch of return-to-service laptops one at a time in the portal is slow and error-prone.",
+      tags:["autopilot","fresh start","wipe"],
+      risk:"destructive",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementManagedDevices.PrivilegedOperations.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementManagedDevices.PrivilegedOperations.All"
+
+$deviceIds = Get-Content ".\\managed-device-ids.txt"
+
+foreach ($id in $deviceIds) {
+    $params = @{ ManagedDeviceId = $id; KeepUserData = $false }
+    Invoke-MgCleanWindowsDeviceDeviceManagementManagedDevice @params
+    Write-Host "Fresh Start queued for $id"
+}`,
+      graph:`POST https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{managedDeviceId}/cleanWindowsDevice
+Content-Type: application/json
+
+{
+  "keepUserData": false
+}`,
+      note:"This wipes the device back to an Autopilot-ready state. Confirm the Autopilot profile and group tag are correct before batching."
+    }
+  ]
+},
+{
+  cat:"Compliance Reporting",
+  glyph:"◈",
+  items:[
+    {
+      title:"Non-compliant devices with failure reason",
+      pain:"The compliance dashboard shows counts but not a clean exportable list of who's failing and why, for a weekly report to leadership.",
+      tags:["compliance","report","export"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementManagedDevices.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementManagedDevices.Read.All"
+
+$devices = Get-MgDeviceManagementManagedDevice -Filter "complianceState eq 'noncompliant'" -All
+
+$report = foreach ($d in $devices) {
+    $states = Get-MgDeviceManagementManagedDeviceDeviceCompliancePolicyState -ManagedDeviceId $d.Id
+    [PSCustomObject]@{
+        DeviceName = $d.DeviceName
+        User       = $d.UserPrincipalName
+        OS         = $d.OperatingSystem
+        LastSync   = $d.LastSyncDateTime
+        FailedPolicies = ($states | Where-Object State -eq "nonCompliant").DisplayName -join "; "
+    }
+}
+
+$report | Export-Csv ".\\noncompliant-report.csv" -NoTypeInformation`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=complianceState eq 'noncompliant'
+
+GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{managedDeviceId}/deviceCompliancePolicyStates`,
+      note:"deviceCompliancePolicyStates is a per-device call — for large tenants, batch it or throttle to stay under Graph rate limits."
+    },
+    {
+      title:"Compliance state breakdown per policy",
+      pain:"Leadership wants a single number per compliance policy: how many devices pass, fail, or are in grace period — not a raw device dump.",
+      tags:["compliance","policy","summary"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementConfiguration.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementConfiguration.Read.All"
+
+$policies = Get-MgDeviceManagementDeviceCompliancePolicy -All
+
+foreach ($p in $policies) {
+    $summary = Get-MgDeviceManagementDeviceCompliancePolicyDeviceStatusSummary -DeviceCompliancePolicyId $p.Id
+    [PSCustomObject]@{
+        Policy       = $p.DisplayName
+        Compliant    = $summary.CompliantDeviceCount
+        NonCompliant = $summary.NonCompliantDeviceCount
+        InGrace      = $summary.InGracePeriodCount
+        Error        = $summary.ErrorDeviceCount
+    }
+}`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceManagement/deviceCompliancePolicies
+
+GET https://graph.microsoft.com/v1.0/deviceManagement/deviceCompliancePolicies/{policyId}/deviceStatusOverview`,
+      note:"Run this monthly and diff against the previous export — a growing 'Error' count usually means a sync or dependency issue, not real non-compliance."
+    },
+    {
+      title:"Devices with no compliance policy assigned",
+      pain:"Gaps in policy assignment are invisible until an auditor asks for proof every device is covered — there's no built-in report for this.",
+      tags:["compliance","gap","audit"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementConfiguration.Read.All, DeviceManagementManagedDevices.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementConfiguration.Read.All","DeviceManagementManagedDevices.Read.All"
+
+$allDevices = Get-MgDeviceManagementManagedDevice -All
+$gaps = foreach ($d in $allDevices) {
+    $states = Get-MgDeviceManagementManagedDeviceDeviceCompliancePolicyState -ManagedDeviceId $d.Id
+    if (-not $states -or $states.Count -eq 0) {
+        [PSCustomObject]@{
+            DeviceName = $d.DeviceName
+            User       = $d.UserPrincipalName
+            OS         = $d.OperatingSystem
+            Enrolled   = $d.EnrolledDateTime
+        }
+    }
+}
+
+$gaps | Export-Csv ".\\compliance-gap-report.csv" -NoTypeInformation
+Write-Host "$($gaps.Count) devices with zero assigned compliance policies"`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{managedDeviceId}/deviceCompliancePolicyStates
+
+# An empty array in the response body means the device has no policy
+# state — cross-check against your intended assignment scope.`,
+      note:"A device can be unmanaged by policy either because assignment was missed, or because it's outside every assignment group's dynamic rule — check both."
+    }
+  ]
+},
+{
+  cat:"App Assignment Audit",
+  glyph:"◫",
+  items:[
+    {
+      title:"All apps with their assigned groups",
+      pain:"Before a license true-up or an access review, you need a single sheet mapping every app to every group it's assigned to — the portal makes you click into each app.",
+      tags:["apps","assignment","audit"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementApps.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementApps.Read.All"
+
+$apps = Get-MgDeviceAppManagementMobileApp -All
+
+$report = foreach ($a in $apps) {
+    $assignments = Get-MgDeviceAppManagementMobileAppAssignment -MobileAppId $a.Id
+    foreach ($asg in $assignments) {
+        [PSCustomObject]@{
+            App       = $a.DisplayName
+            Intent    = $asg.Intent
+            GroupId   = $asg.Target.AdditionalProperties.groupId
+            TargetType= $asg.Target.AdditionalProperties.'@odata.type'
+        }
+    }
+}
+
+$report | Export-Csv ".\\app-assignment-audit.csv" -NoTypeInformation`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceAppManagement/mobileApps
+
+GET https://graph.microsoft.com/v1.0/deviceAppManagement/mobileApps/{appId}/assignments`,
+      note:"Target.AdditionalProperties holds the group ID and assignment filter — resolve group IDs to display names with a follow-up Get-MgGroup call for a readable report."
+    },
+    {
+      title:"Install status for a specific app across all devices",
+      pain:"A rollout is 'mostly done' according to the portal tile, but you need the actual list of who's still pending or failed, to chase them down.",
+      tags:["apps","install status","rollout"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementApps.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementApps.Read.All"
+
+$appId = "&lt;mobile-app-id&gt;"
+$statuses = Get-MgDeviceAppManagementMobileAppDeviceStatus -MobileAppId $appId -All
+
+$statuses |
+  Select-Object DeviceName, UserName, InstallState, LastSyncDateTime |
+  Sort-Object InstallState |
+  Export-Csv ".\\app-install-status.csv" -NoTypeInformation
+
+$statuses | Group-Object InstallState | Select-Object Name, Count`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceAppManagement/mobileApps/{mobileAppId}/deviceStatuses`,
+      note:"installState values include installed, failed, notInstalled, pendingInstall and uninstallFailed — filter client-side since the endpoint doesn't support $filter on this property."
+    },
+    {
+      title:"Find every app assigned to a specific group",
+      pain:"Before decommissioning or renaming a group, you need to know exactly what breaks — every app, profile and policy pointing at it.",
+      tags:["apps","group","assignment"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementApps.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementApps.Read.All"
+
+$targetGroupId = "&lt;entra-group-id&gt;"
+$apps = Get-MgDeviceAppManagementMobileApp -All
+
+$matches = foreach ($a in $apps) {
+    $assignments = Get-MgDeviceAppManagementMobileAppAssignment -MobileAppId $a.Id
+    foreach ($asg in $assignments) {
+        if ($asg.Target.AdditionalProperties.groupId -eq $targetGroupId) {
+            [PSCustomObject]@{ App = $a.DisplayName; Intent = $asg.Intent }
+        }
+    }
+}
+
+$matches | Format-Table -AutoSize`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceAppManagement/mobileApps/{appId}/assignments
+
+# No server-side filter by group exists for assignments — pull all
+# apps' assignments and filter target.groupId client-side, or check
+# the group's own memberOf / transitiveMemberOf for policy objects.`,
+      note:"This is also the fastest pre-check before deleting any group used in Intune scoping — run it and don't skip it."
+    },
+    {
+      title:"Orphaned assignments (target group no longer exists)",
+      pain:"Deleted groups leave dead assignment references behind that silently do nothing, cluttering audits and confusing new admins.",
+      tags:["apps","orphaned","cleanup"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement, Microsoft.Graph.Groups",
+      perm:"DeviceManagementApps.Read.All, Group.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementApps.Read.All","Group.Read.All"
+
+$apps = Get-MgDeviceAppManagementMobileApp -All
+$orphans = foreach ($a in $apps) {
+    $assignments = Get-MgDeviceAppManagementMobileAppAssignment -MobileAppId $a.Id
+    foreach ($asg in $assignments) {
+        $gid = $asg.Target.AdditionalProperties.groupId
+        if ($gid) {
+            try { Get-MgGroup -GroupId $gid -ErrorAction Stop | Out-Null }
+            catch { [PSCustomObject]@{ App = $a.DisplayName; MissingGroupId = $gid } }
+        }
+    }
+}
+$orphans | Format-Table -AutoSize`,
+      graph:`GET https://graph.microsoft.com/v1.0/groups/{groupId}
+
+# A 404 on this call for a group ID referenced in an assignment
+# confirms the group has been deleted — the assignment is orphaned.`,
+      note:"Run quarterly. Orphaned assignments don't error anywhere visible, so they only surface when someone goes looking."
+    }
+  ]
+},
+{
+  cat:"Autopilot",
+  glyph:"◆",
+  items:[
+    {
+      title:"Bulk import Autopilot devices from CSV",
+      pain:"New hardware batches from a vendor need their hardware hashes registered one at a time through the portal upload — slow for large orders.",
+      tags:["autopilot","import","provisioning"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement.Enrollment",
+      perm:"DeviceManagementServiceConfig.ReadWrite.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementServiceConfig.ReadWrite.All"
+
+# CSV columns: SerialNumber, HardwareHash, GroupTag
+$devices = Import-Csv ".\\autopilot-devices.csv"
+
+foreach ($d in $devices) {
+    $body = @{
+        serialNumber = $d.SerialNumber
+        hardwareIdentifier = $d.HardwareHash
+        groupTag = $d.GroupTag
+    }
+    New-MgDeviceManagementImportedWindowsAutopilotDeviceIdentity -BodyParameter $body
+    Write-Host "Queued: $($d.SerialNumber)"
+}`,
+      graph:`POST https://graph.microsoft.com/v1.0/deviceManagement/importedWindowsAutopilotDeviceIdentities
+Content-Type: application/json
+
+{
+  "serialNumber": "SERIAL123",
+  "hardwareIdentifier": "&lt;hash&gt;",
+  "groupTag": "Finance-Laptops"
+}`,
+      note:"Import is async — poll importedWindowsAutopilotDeviceIdentities/{id} until state.deviceImportStatus reads 'complete' before assuming it's registered."
+    },
+    {
+      title:"Assign a group tag to existing Autopilot devices",
+      pain:"Devices were registered without a group tag, so dynamic group membership and profile assignment never picked them up.",
+      tags:["autopilot","group tag","assignment"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement.Enrollment",
+      perm:"DeviceManagementServiceConfig.ReadWrite.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementServiceConfig.ReadWrite.All"
+
+$serials = Import-Csv ".\\serials-to-tag.csv"   # column: SerialNumber
+
+foreach ($row in $serials) {
+    $filter = "contains(serialNumber,'$($row.SerialNumber)')"
+    $apDevice = Get-MgDeviceManagementWindowsAutopilotDeviceIdentity -Filter $filter
+    if ($apDevice) {
+        $params = @{ WindowsAutopilotDeviceIdentityId = $apDevice.Id; GroupTag = "Finance-Laptops" }
+        Update-MgDeviceManagementWindowsAutopilotDeviceIdentity @params
+        Write-Host "Tagged: $($row.SerialNumber)"
+    }
+}`,
+      graph:`PATCH https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities/{id}/UpdateDeviceProperties
+Content-Type: application/json
+
+{
+  "groupTag": "Finance-Laptops"
+}`,
+      note:"Group tag changes don't retroactively re-evaluate dynamic group membership instantly — allow time for the membership processor to catch up."
+    },
+    {
+      title:"Autopilot deployment status report",
+      pain:"Rolling out to a new site, you need a live view of which shipped devices have actually completed OOBE, not just what's registered.",
+      tags:["autopilot","status","report"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement.Enrollment",
+      perm:"DeviceManagementServiceConfig.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementServiceConfig.Read.All"
+
+$apDevices = Get-MgDeviceManagementWindowsAutopilotDeviceIdentity -All
+
+$apDevices |
+  Select-Object SerialNumber, GroupTag, EnrollmentState, LastContactedDateTime |
+  Sort-Object EnrollmentState |
+  Export-Csv ".\\autopilot-status.csv" -NoTypeInformation
+
+$apDevices | Group-Object EnrollmentState | Select-Object Name, Count`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities`,
+      note:"enrollmentState of 'enrolled' means OOBE completed and the device is now in managedDevices — cross-reference the two collections by serial number for a full picture."
+    }
+  ]
+},
+{
+  cat:"Config Profiles",
+  glyph:"▤",
+  items:[
+    {
+      title:"Profile assignment report — all profiles, all groups",
+      pain:"Nobody has a single view of which configuration profiles hit which groups, so overlapping or conflicting settings only surface when a user complains.",
+      tags:["profiles","assignment","audit"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementConfiguration.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementConfiguration.Read.All"
+
+$profiles = Get-MgDeviceManagementDeviceConfiguration -All
+
+$report = foreach ($p in $profiles) {
+    $assignments = Get-MgDeviceManagementDeviceConfigurationAssignment -DeviceConfigurationId $p.Id
+    foreach ($asg in $assignments) {
+        [PSCustomObject]@{
+            Profile = $p.DisplayName
+            GroupId = $asg.Target.AdditionalProperties.groupId
+            Type    = $asg.Target.AdditionalProperties.'@odata.type'
+        }
+    }
+}
+
+$report | Export-Csv ".\\profile-assignment-report.csv" -NoTypeInformation`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceManagement/deviceConfigurations
+
+GET https://graph.microsoft.com/v1.0/deviceManagement/deviceConfigurations/{id}/assignments
+
+# For Settings Catalog profiles use /configurationPolicies instead
+# of /deviceConfigurations — they're a separate object type.`,
+      note:"Settings Catalog profiles, Compliance policies and legacy Device Configuration profiles are three different Graph collections — this covers the legacy/templated type, adapt the endpoint for the others."
+    },
+    {
+      title:"Devices where a profile shows 'not applicable'",
+      pain:"A profile deploys fine tenant-wide except a handful of devices silently sit at 'not applicable' with no obvious reason in the UI.",
+      tags:["profiles","conflict","troubleshoot"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementConfiguration.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementConfiguration.Read.All"
+
+$profileId = "&lt;device-configuration-id&gt;"
+$states = Get-MgDeviceManagementDeviceConfigurationDeviceStatus -DeviceConfigurationId $profileId
+
+$states |
+  Where-Object { $_.Status -eq "notApplicable" } |
+  Select-Object DeviceDisplayName, UserName, Status |
+  Format-Table -AutoSize`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceManagement/deviceConfigurations/{id}/deviceStatuses`,
+      note:"'Not applicable' almost always means an OS version, edition, or enrollment type mismatch with the profile's platform scope — check that before assuming assignment is broken."
+    }
+  ]
+},
+{
+  cat:"User & Group Audits",
+  glyph:"◉",
+  items:[
+    {
+      title:"Intune RBAC — who has which role",
+      pain:"Before a security review you need a clean list of everyone with elevated Intune access and exactly what scope they hold, not just Entra role names.",
+      tags:["rbac","roles","security"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement.Administration",
+      perm:"DeviceManagementRBAC.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementRBAC.Read.All"
+
+$assignments = Get-MgDeviceManagementRoleAssignment -All
+
+$report = foreach ($a in $assignments) {
+    $def = Get-MgDeviceManagementRoleDefinition -RoleDefinitionId $a.RoleDefinitionId
+    [PSCustomObject]@{
+        RoleAssignment = $a.DisplayName
+        RoleDefinition = $def.DisplayName
+        ScopeType      = $a.ResourceScopes -join ", "
+    }
+}
+
+$report | Format-Table -AutoSize`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceManagement/roleAssignments
+
+GET https://graph.microsoft.com/v1.0/deviceManagement/roleDefinitions/{id}`,
+      note:"Built-in roles and custom roles share the same endpoints — custom role definitions have isBuiltIn: false in the response if you need to separate them out."
+    },
+    {
+      title:"Dynamic groups affecting Intune scope",
+      pain:"An unexpected device or user lands in an assignment and nobody remembers which dynamic rule pulled them in — tracing it back through the portal is tedious.",
+      tags:["groups","dynamic","troubleshoot"],
+      risk:"safe",
+      module:"Microsoft.Graph.Groups",
+      perm:"Group.Read.All",
+      ps:`Connect-MgGraph -Scopes "Group.Read.All"
+
+$dynamicGroups = Get-MgGroup -Filter "groupTypes/any(g:g eq 'DynamicMembership')" -All
+
+$dynamicGroups |
+  Select-Object DisplayName, MembershipRule, MembershipRuleProcessingState |
+  Export-Csv ".\\dynamic-group-rules.csv" -NoTypeInformation`,
+      graph:`GET https://graph.microsoft.com/v1.0/groups?$filter=groupTypes/any(g:g eq 'DynamicMembership')&$select=displayName,membershipRule,membershipRuleProcessingState`,
+      note:"Export this once and keep it as a reference sheet — membership rules are free-text and easy to forget the exact syntax of six months later."
+    }
+  ]
+},
+{
+  cat:"Conditional Access",
+  glyph:"◇",
+  items:[
+    {
+      title:"Export all CA policies with state and controls",
+      pain:"A security audit wants every Conditional Access policy, its enabled/report-only/off state, and its grant controls in one sheet — clicking through each policy in the portal takes an hour.",
+      tags:["conditional access","export","audit"],
+      risk:"safe",
+      module:"Microsoft.Graph.Identity.SignIns",
+      perm:"Policy.Read.All",
+      ps:`Connect-MgGraph -Scopes "Policy.Read.All"
+
+$policies = Get-MgIdentityConditionalAccessPolicy -All
+
+$policies |
+  Select-Object DisplayName, State,
+    @{N="GrantControls";E={$_.GrantControls.BuiltInControls -join ", "}},
+    @{N="Users";E={$_.Conditions.Users.IncludeUsers -join ", "}} |
+  Export-Csv ".\\ca-policy-export.csv" -NoTypeInformation`,
+      graph:`GET https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies`,
+      note:"State values are enabled, disabled, or enabledForReportingButNotEnforced — the last one is 'report-only' and is easy to mistake for fully active in a quick glance."
+    },
+    {
+      title:"CA policies with no group exclusions",
+      pain:"A break-glass or service account gets locked out because a CA policy tightened with zero exclusions — you want to catch this before it happens, not after.",
+      tags:["conditional access","risk","exclusions"],
+      risk:"safe",
+      module:"Microsoft.Graph.Identity.SignIns",
+      perm:"Policy.Read.All",
+      ps:`Connect-MgGraph -Scopes "Policy.Read.All"
+
+$policies = Get-MgIdentityConditionalAccessPolicy -All
+
+$risky = $policies | Where-Object {
+    $_.State -eq "enabled" -and
+    ($_.Conditions.Users.ExcludeGroups.Count -eq 0) -and
+    ($_.Conditions.Users.ExcludeUsers.Count -eq 0)
+}
+
+$risky | Select-Object DisplayName, State | Format-Table -AutoSize`,
+      graph:`GET https://graph.microsoft.com/v1.0/identity/conditionalAccess/policies?$select=displayName,state,conditions`,
+      note:"Pair this with a standing break-glass account exclusion check — the two most common CA lockout causes are missing exclusions and an expired break-glass credential."
+    }
+  ]
+},
+{
+  cat:"User Lifecycle & Licensing",
+  glyph:"◐",
+  items:[
+    {
+      title:"Swap a user's license from one SKU to another",
+      pain:"A user needs moving from E3 to E5 (or any SKU-to-SKU swap) without a gap in mailbox/Teams access, and doing it by hand in the portal risks forgetting to remove the old SKU.",
+      tags:["license","swap","user","sku"],
+      risk:"destructive",
+      module:"Microsoft.Graph.Users.Actions",
+      perm:"User.ReadWrite.All, Organization.Read.All",
+      ps:`Connect-MgGraph -Scopes "User.ReadWrite.All","Organization.Read.All"
+
+$upn = "user@contoso.com"
+$oldSkuPartNumber = "ENTERPRISEPACK"        # E3
+$newSkuPartNumber = "SPE_E5"                # E5
+
+$skus = Get-MgSubscribedSku -All
+$oldSku = $skus | Where-Object SkuPartNumber -eq $oldSkuPartNumber
+$newSku = $skus | Where-Object SkuPartNumber -eq $newSkuPartNumber
+
+if (-not $newSku.PrepaidUnits.Enabled -or ($newSku.ConsumedUnits -ge $newSku.PrepaidUnits.Enabled)) {
+    Write-Warning "No available seats on $newSkuPartNumber — aborting before removing the old license."
+    return
+}
+
+Set-MgUserLicense -UserId $upn -AddLicenses @{SkuId = $newSku.SkuId} -RemoveLicenses @($oldSku.SkuId)
+Write-Host "Swapped $upn from $oldSkuPartNumber to $newSkuPartNumber"`,
+      graph:`PATCH https://graph.microsoft.com/v1.0/users/{userId}/assignLicense
+Content-Type: application/json
+
+{
+  "addLicenses": [ { "skuId": "<new-sku-guid>" } ],
+  "removeLicenses": [ "<old-sku-guid>" ]
+}`,
+      note:"assignLicense does the add and remove atomically in one call — never do two separate calls, or the user can briefly lose all licensing if the add fails after the remove succeeds."
+    },
+    {
+      title:"Bulk reassign licenses from leavers to new starters",
+      pain:"Freed-up seats from offboarded users sit unused because nobody tracks which licenses are now free, so new starters wait on procurement instead of reusing existing seats.",
+      tags:["license","bulk","reassign","offboarding"],
+      risk:"destructive",
+      module:"Microsoft.Graph.Users.Actions",
+      perm:"User.ReadWrite.All",
+      ps:`Connect-MgGraph -Scopes "User.ReadWrite.All"
+
+# CSV columns: FromUpn, ToUpn
+$moves = Import-Csv ".\\license-reassignments.csv"
+
+foreach ($m in $moves) {
+    $fromUser = Get-MgUser -UserId $m.FromUpn -Property AssignedLicenses
+    $toUser   = Get-MgUser -UserId $m.ToUpn
+
+    foreach ($lic in $fromUser.AssignedLicenses) {
+        Set-MgUserLicense -UserId $fromUser.Id -RemoveLicenses @($lic.SkuId) -AddLicenses @()
+        Set-MgUserLicense -UserId $toUser.Id -AddLicenses @{SkuId = $lic.SkuId} -RemoveLicenses @()
+        Write-Host "Moved SKU $($lic.SkuId): $($m.FromUpn) -> $($m.ToUpn)"
+    }
+}`,
+      graph:`PATCH https://graph.microsoft.com/v1.0/users/{fromUserId}/assignLicense
+{ "addLicenses": [], "removeLicenses": ["<sku-guid>"] }
+
+PATCH https://graph.microsoft.com/v1.0/users/{toUserId}/assignLicense
+{ "addLicenses": [ { "skuId": "<sku-guid>" } ], "removeLicenses": [] }`,
+      note:"Run the leaver's removal and starter's addition as two calls, not combined — combining them across two different user IDs isn't supported by assignLicense, which only ever targets one user per call."
+    },
+    {
+      title:"License usage &amp; available seats report across all SKUs",
+      pain:"Finance asks 'do we need to buy more licenses' and the honest answer requires cross-referencing consumed vs. purchased seats per SKU, which isn't a single portal screen.",
+      tags:["license","report","seats","finance"],
+      risk:"safe",
+      module:"Microsoft.Graph.Identity.DirectoryManagement",
+      perm:"Organization.Read.All",
+      ps:`Connect-MgGraph -Scopes "Organization.Read.All"
+
+Get-MgSubscribedSku -All |
+  Select-Object SkuPartNumber,
+    @{N="Purchased";E={$_.PrepaidUnits.Enabled}},
+    @{N="Consumed";E={$_.ConsumedUnits}},
+    @{N="Available";E={$_.PrepaidUnits.Enabled - $_.ConsumedUnits}} |
+  Sort-Object Available |
+  Export-Csv ".\\license-seat-report.csv" -NoTypeInformation`,
+      graph:`GET https://graph.microsoft.com/v1.0/subscribedSkus`,
+      note:"PrepaidUnits also has Warning and Suspended sub-counts — seats in those states still count toward Enabled but may not be assignable; check the tenant's billing status if Available looks wrong."
+    },
+    {
+      title:"Find licensed-but-disabled or never-signed-in accounts",
+      pain:"Disabled accounts often keep their license assignment because offboarding checklists stop at 'disable the account' and never circle back to reclaim the seat.",
+      tags:["license","cleanup","disabled","audit"],
+      risk:"safe",
+      module:"Microsoft.Graph.Users",
+      perm:"User.Read.All, AuditLog.Read.All",
+      ps:`Connect-MgGraph -Scopes "User.Read.All","AuditLog.Read.All"
+
+$users = Get-MgUser -All -Property DisplayName,UserPrincipalName,AccountEnabled,AssignedLicenses,SignInActivity
+
+$wasted = $users | Where-Object {
+    $_.AssignedLicenses.Count -gt 0 -and (
+        $_.AccountEnabled -eq $false -or
+        -not $_.SignInActivity.LastSignInDateTime
+    )
+}
+
+$wasted |
+  Select-Object DisplayName, UserPrincipalName, AccountEnabled,
+    @{N="LicenseCount";E={$_.AssignedLicenses.Count}},
+    @{N="LastSignIn";E={$_.SignInActivity.LastSignInDateTime}} |
+  Export-Csv ".\\wasted-license-report.csv" -NoTypeInformation`,
+      graph:`GET https://graph.microsoft.com/v1.0/users?$select=displayName,userPrincipalName,accountEnabled,assignedLicenses,signInActivity`,
+      note:"signInActivity requires AuditLog.Read.All in addition to a user read scope, and is only populated for interactive/non-interactive sign-ins Azure AD has actually recorded — very new accounts may show null legitimately."
+    }
+  ]
+},
+{
+  cat:"Tenant-to-Tenant Migration",
+  glyph:"⇄",
+  items:[
+    {
+      title:"Export full user inventory for target-tenant mapping",
+      pain:"Before any tenant-to-tenant migration (M&amp;A, divestiture, rebrand) you need a clean source-of-truth export of every user, their UPN, licenses and manager, to build the source-to-target identity mapping sheet.",
+      tags:["migration","tenant-to-tenant","users","export"],
+      risk:"safe",
+      module:"Microsoft.Graph.Users",
+      perm:"User.Read.All",
+      ps:`Connect-MgGraph -Scopes "User.Read.All"
+
+$users = Get-MgUser -All -Property DisplayName,UserPrincipalName,Mail,Department,JobTitle,AccountEnabled,AssignedLicenses,Manager -ExpandProperty Manager
+
+$users |
+  Select-Object DisplayName, UserPrincipalName, Mail, Department, JobTitle, AccountEnabled,
+    @{N="LicenseCount";E={$_.AssignedLicenses.Count}},
+    @{N="ManagerUpn";E={$_.Manager.AdditionalProperties.userPrincipalName}} |
+  Export-Csv ".\\source-tenant-user-inventory.csv" -NoTypeInformation
+
+Write-Host "Exported $($users.Count) users for target-tenant mapping"`,
+      graph:`GET https://graph.microsoft.com/v1.0/users?$select=displayName,userPrincipalName,mail,department,jobTitle,accountEnabled,assignedLicenses
+
+GET https://graph.microsoft.com/v1.0/users/{userId}/manager`,
+      note:"Do this export early and re-run it right before cutover — user counts and license assignments drift for weeks during a migration project and the mapping sheet goes stale fast."
+    },
+    {
+      title:"Export Intune device inventory for re-enrollment planning",
+      pain:"Migrating to a new tenant means every managed device has to be retired from the old tenant and re-enrolled in the new one — you need the full device-to-user-to-model list before touching anything.",
+      tags:["migration","tenant-to-tenant","devices","export"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementManagedDevices.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementManagedDevices.Read.All"
+
+Get-MgDeviceManagementManagedDevice -All |
+  Select-Object DeviceName, UserPrincipalName, Manufacturer, Model, SerialNumber,
+    OperatingSystem, OsVersion, ComplianceState, EnrolledDateTime, ManagementAgent |
+  Export-Csv ".\\source-tenant-device-inventory.csv" -NoTypeInformation`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$select=deviceName,userPrincipalName,manufacturer,model,serialNumber,operatingSystem,osVersion,complianceState,enrolledDateTime`,
+      note:"Cross-reference SerialNumber against the target tenant's Autopilot allow-list export (if using Autopilot) so devices land in the right deployment profile immediately on re-enrollment instead of hitting a default OOBE."
+    },
+    {
+      title:"Cross-tenant group membership export for target-tenant recreation",
+      pain:"Security and Microsoft 365 groups don't migrate automatically between tenants — you need every group's membership captured so the target tenant's groups can be recreated with the same people in them.",
+      tags:["migration","tenant-to-tenant","groups","export"],
+      risk:"safe",
+      module:"Microsoft.Graph.Groups",
+      perm:"Group.Read.All, GroupMember.Read.All",
+      ps:`Connect-MgGraph -Scopes "Group.Read.All","GroupMember.Read.All"
+
+$groups = Get-MgGroup -All -Property DisplayName,Mail,GroupTypes,SecurityEnabled,MailEnabled
+
+$export = foreach ($g in $groups) {
+    $members = Get-MgGroupMember -GroupId $g.Id -All
+    [PSCustomObject]@{
+        GroupName    = $g.DisplayName
+        GroupType    = if ($g.GroupTypes -contains "Unified") {"Microsoft365"} elseif ($g.SecurityEnabled) {"Security"} else {"Distribution"}
+        MemberUpns   = ($members.AdditionalProperties.userPrincipalName -join "; ")
+        MemberCount  = $members.Count
+    }
+}
+
+$export | Export-Csv ".\\group-membership-for-target-tenant.csv" -NoTypeInformation`,
+      graph:`GET https://graph.microsoft.com/v1.0/groups?$select=displayName,mail,groupTypes,securityEnabled,mailEnabled
+
+GET https://graph.microsoft.com/v1.0/groups/{groupId}/members`,
+      note:"Dynamic membership rules don't carry across tenants at all — flag every dynamic group in this export separately, since the target tenant needs the rule text re-created, not just a static member list."
+    },
+    {
+      title:"Pre-migration compliance &amp; enrollment snapshot",
+      pain:"After cutover, leadership will ask 'did we lose compliance coverage during the migration' — you need a before-state snapshot to prove nothing regressed, taken right before the cutover window.",
+      tags:["migration","tenant-to-tenant","compliance","snapshot"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementManagedDevices.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementManagedDevices.Read.All"
+
+$devices = Get-MgDeviceManagementManagedDevice -All
+
+$snapshot = $devices | Group-Object ComplianceState | Select-Object Name, Count
+$snapshot | Export-Csv ".\\pre-migration-compliance-snapshot.csv" -NoTypeInformation
+
+$timestamp = Get-Date -Format "yyyy-MM-dd_HHmm"
+$devices | Select-Object DeviceName, UserPrincipalName, ComplianceState, LastSyncDateTime |
+  Export-Csv ".\\pre-migration-device-detail-$timestamp.csv" -NoTypeInformation
+
+Write-Host "Snapshot captured: $($devices.Count) devices at $timestamp"`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$select=deviceName,userPrincipalName,complianceState,lastSyncDateTime`,
+      note:"Take this snapshot as close to the actual cutover as possible — the further ahead of cutover you run it, the less useful it is as a 'before' baseline for the post-migration comparison."
+    },
+    {
+      title:"Bulk retire source-tenant devices after successful target enrollment",
+      pain:"Once devices are confirmed enrolled and compliant in the target tenant, the source-tenant Intune records need cleaning up so licenses and device counts in the old tenant stop being consumed.",
+      tags:["migration","tenant-to-tenant","retire","cleanup"],
+      risk:"destructive",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementManagedDevices.PrivilegedOperations.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementManagedDevices.PrivilegedOperations.All"
+
+# CSV column: SerialNumber — only devices CONFIRMED enrolled + compliant in the target tenant
+$confirmed = Import-Csv ".\\confirmed-migrated-devices.csv"
+
+foreach ($row in $confirmed) {
+    $device = Get-MgDeviceManagementManagedDevice -Filter "serialNumber eq '$($row.SerialNumber)'"
+    if ($device) {
+        # Retire (not wipe) — leaves the physical device usable, just removes it from THIS tenant's Intune
+        Invoke-MgRetireDeviceManagementManagedDevice -ManagedDeviceId $device.Id
+        Write-Host "Retired from source tenant: $($row.SerialNumber)"
+    }
+}`,
+      graph:`POST https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{managedDeviceId}/retire`,
+      note:"Retire only after the target-tenant enrollment is verified compliant — this is a one-way door for the source tenant's record of the device, and re-adding it back to the old tenant means a fresh enrollment."
+    }
+  ]
+},
+{
+  cat:"Device Lifecycle",
+  glyph:"▥",
+  items:[
+    {
+      title:"Bulk reassign primary user on a batch of devices",
+      pain:"Devices get handed between employees (shared pool, re-issued after a leaver) and the Intune primary user still points to whoever had it last, which breaks per-user reporting and self-service portal visibility.",
+      tags:["primary user","reassign","bulk"],
+      risk:"destructive",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementManagedDevices.ReadWrite.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementManagedDevices.ReadWrite.All"
+
+# CSV columns: SerialNumber, NewOwnerUpn
+$reassignments = Import-Csv ".\\primary-user-reassignments.csv"
+
+foreach ($row in $reassignments) {
+    $device = Get-MgDeviceManagementManagedDevice -Filter "serialNumber eq '$($row.SerialNumber)'"
+    $newUser = Get-MgUser -UserId $row.NewOwnerUpn
+    if ($device -and $newUser) {
+        $body = @{ "@odata.id" = "https://graph.microsoft.com/v1.0/users/$($newUser.Id)" }
+        Invoke-MgGraphRequest -Method POST -Uri "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/$($device.Id)/users/\`$ref" -Body $body
+        Write-Host "Reassigned $($row.SerialNumber) -> $($row.NewOwnerUpn)"
+    }
+}`,
+      graph:`POST https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{managedDeviceId}/users/$ref
+Content-Type: application/json
+
+{
+  "@odata.id": "https://graph.microsoft.com/v1.0/users/{newUserId}"
+}`,
+      note:"Changing the primary user does not move per-user assignments (apps/profiles targeted at the OLD user's groups) to the new user automatically — check group membership for both users after reassigning."
+    },
+    {
+      title:"Reclassify device ownership: corporate vs. personal",
+      pain:"BYOD devices sometimes get enrolled as corporate by mistake (or vice versa), which changes which compliance policies and app protection rules apply — and there's no bulk portal action to fix it.",
+      tags:["ownership","corporate","personal","byod"],
+      risk:"destructive",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementManagedDevices.PrivilegedOperations.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementManagedDevices.PrivilegedOperations.All"
+
+$serials = Import-Csv ".\\ownership-corrections.csv"   # column: SerialNumber
+
+foreach ($row in $serials) {
+    $device = Get-MgDeviceManagementManagedDevice -Filter "serialNumber eq '$($row.SerialNumber)'"
+    if ($device) {
+        Update-MgDeviceManagementManagedDeviceOwnerType -ManagedDeviceId $device.Id -OwnerType "company"
+        Write-Host "Set to corporate: $($row.SerialNumber)"
+    }
+}`,
+      graph:`POST https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{managedDeviceId}/updateWindowsDeviceAccount
+
+# Ownership itself is set via the managedDeviceOwnerType property — for most
+# platforms this requires the changeDeviceOwnership-style action endpoint
+# rather than a plain PATCH; verify the current action name for your Graph
+# API version, as this endpoint has changed across Graph versions.`,
+      note:"Ownership type drives which compliance policies, conditional access grant controls and app protection policies apply — always confirm the correct assignment group picks the device up within one sync cycle after reclassifying."
+    },
+    {
+      title:"Bulk update device category tags",
+      pain:"Device categories (Kiosk, Loaner, Executive, Shared) are used to scope policies and reports, but new devices land in 'Unassigned' by default and nobody circles back to tag them.",
+      tags:["device category","bulk","tagging"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementManagedDevices.ReadWrite.All, DeviceManagementConfiguration.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementManagedDevices.ReadWrite.All","DeviceManagementConfiguration.Read.All"
+
+$targetCategory = Get-MgDeviceManagementDeviceCategory -Filter "displayName eq 'Loaner'"
+$serials = Get-Content ".\\loaner-serials.txt"
+
+foreach ($serial in $serials) {
+    $device = Get-MgDeviceManagementManagedDevice -Filter "serialNumber eq '$serial'"
+    if ($device) {
+        $params = @{ "@odata.id" = "https://graph.microsoft.com/v1.0/deviceManagement/deviceCategories/$($targetCategory.Id)" }
+        Invoke-MgGraphRequest -Method PUT -Uri "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/$($device.Id)/deviceCategory/\`$ref" -Body $params
+        Write-Host "Categorized: $serial -> Loaner"
+    }
+}`,
+      graph:`PUT https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/{managedDeviceId}/deviceCategory/$ref
+Content-Type: application/json
+
+{
+  "@odata.id": "https://graph.microsoft.com/v1.0/deviceManagement/deviceCategories/{categoryId}"
+}`,
+      note:"Device categories must already exist in Intune before this runs — create them once in the portal (Devices &gt; Device categories), then this script only ever assigns, never creates."
+    },
+    {
+      title:"Full hardware inventory export (manufacturer, model, warranty-relevant fields)",
+      pain:"Budgeting for hardware refresh needs a real inventory — manufacturer, model, serial, OS build — and the portal's device list view doesn't export in one click with all the columns finance wants.",
+      tags:["hardware","inventory","export","refresh"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementManagedDevices.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementManagedDevices.Read.All"
+
+Get-MgDeviceManagementManagedDevice -All |
+  Select-Object DeviceName, UserPrincipalName, Manufacturer, Model, SerialNumber,
+    OperatingSystem, OsVersion, TotalStorageSpaceInBytes, PhysicalMemoryInBytes,
+    EnrolledDateTime, LastSyncDateTime |
+  Export-Csv ".\\hardware-inventory-$(Get-Date -Format yyyy-MM-dd).csv" -NoTypeInformation`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$select=deviceName,userPrincipalName,manufacturer,model,serialNumber,operatingSystem,osVersion,totalStorageSpaceInBytes,physicalMemoryInBytes,enrolledDateTime,lastSyncDateTime`,
+      note:"EnrolledDateTime is the best proxy for device age Graph exposes directly — it won't be exact purchase date, but it's consistent enough to drive a 3-4 year refresh cycle report."
+    },
+    {
+      title:"BitLocker recovery key audit — devices missing an escrowed key",
+      pain:"A device with BitLocker enabled but no recovery key escrowed to Entra ID means a support call away from a permanently locked-out user — this gap is invisible until someone actually needs the key.",
+      tags:["bitlocker","recovery key","audit","security"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement, Microsoft.Graph.Identity.DirectoryManagement",
+      perm:"BitlockerKey.Read.All, DeviceManagementManagedDevices.Read.All",
+      ps:`Connect-MgGraph -Scopes "BitlockerKey.Read.All","DeviceManagementManagedDevices.Read.All"
+
+$windowsDevices = Get-MgDeviceManagementManagedDevice -Filter "operatingSystem eq 'Windows'" -All
+$escrowedKeys = Get-MgInformationProtectionBitlockerRecoveryKey -All
+
+$missing = foreach ($d in $windowsDevices) {
+    $hasKey = $escrowedKeys | Where-Object { $_.DeviceId -eq $d.AzureAdDeviceId }
+    if (-not $hasKey) {
+        [PSCustomObject]@{ DeviceName = $d.DeviceName; User = $d.UserPrincipalName; AzureAdDeviceId = $d.AzureAdDeviceId }
+    }
+}
+
+$missing | Export-Csv ".\\bitlocker-missing-key-report.csv" -NoTypeInformation
+Write-Host "$($missing.Count) Windows devices with no escrowed BitLocker key found"`,
+      graph:`GET https://graph.microsoft.com/v1.0/informationProtection/bitlocker/recoveryKeys?$select=deviceId
+
+GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=operatingSystem eq 'Windows'`,
+      note:"BitlockerKey.Read.All only returns key metadata (device ID, creation date), never the key material itself via this list call — retrieving the actual recovery key value requires a separate per-key call and is heavily audited, as it should be."
+    }
+  ]
+},
+{
+  cat:"User-Side Self-Service & Troubleshooting",
+  glyph:"◔",
+  items:[
+    {
+      title:"One-shot user health check: devices, compliance, licenses, groups",
+      pain:"A user opens a ticket saying 'nothing works' — instead of four separate portal lookups, you want their device list, compliance state, licenses and key group memberships in one pass before you even call them back.",
+      tags:["troubleshoot","user","health check","support"],
+      risk:"safe",
+      module:"Microsoft.Graph.Users, Microsoft.Graph.DeviceManagement",
+      perm:"User.Read.All, DeviceManagementManagedDevices.Read.All, GroupMember.Read.All",
+      ps:`Connect-MgGraph -Scopes "User.Read.All","DeviceManagementManagedDevices.Read.All","GroupMember.Read.All"
+
+$upn = "user@contoso.com"
+
+$user = Get-MgUser -UserId $upn -Property DisplayName,AccountEnabled,AssignedLicenses,UserPrincipalName
+$devices = Get-MgDeviceManagementManagedDevice -Filter "userPrincipalName eq '$upn'"
+$groups = Get-MgUserMemberOf -UserId $upn -All
+
+Write-Host "== $($user.DisplayName) ($upn) =="
+Write-Host "Account enabled: $($user.AccountEnabled) | Licenses: $($user.AssignedLicenses.Count)"
+Write-Host "-- Devices --"
+$devices | Select-Object DeviceName, ComplianceState, OperatingSystem, LastSyncDateTime | Format-Table -AutoSize
+Write-Host "-- Group count: $($groups.Count) --"`,
+      graph:`GET https://graph.microsoft.com/v1.0/users/{upn}?$select=displayName,accountEnabled,assignedLicenses
+
+GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=userPrincipalName eq '{upn}'
+
+GET https://graph.microsoft.com/v1.0/users/{upn}/memberOf`,
+      note:"Turn this into a saved function once — it's the single most useful five minutes you can save on every 'nothing works for this user' ticket that comes in."
+    },
+    {
+      title:"Why can't this user enroll a device — enrollment restriction check",
+      pain:"A user hits a vague enrollment failure and the real cause is almost always an enrollment restriction (device limit, platform block, or personal-device policy) that isn't obvious from the error message alone.",
+      tags:["enrollment","troubleshoot","restrictions","user"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementServiceConfig.Read.All, DeviceManagementManagedDevices.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementServiceConfig.Read.All","DeviceManagementManagedDevices.Read.All"
+
+$upn = "user@contoso.com"
+
+$currentDeviceCount = (Get-MgDeviceManagementManagedDevice -Filter "userPrincipalName eq '$upn'").Count
+$restrictions = Get-MgDeviceManagementDeviceEnrollmentConfiguration -All |
+  Where-Object { $_.AdditionalProperties.'@odata.type' -match "DeviceLimit|PlatformRestriction" }
+
+Write-Host "Current enrolled device count for $upn : $currentDeviceCount"
+$restrictions | Select-Object DisplayName, @{N="Type";E={$_.AdditionalProperties.'@odata.type'}} | Format-Table -AutoSize
+Write-Host "Compare the user's assignment scope against each restriction's target groups above."`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceManagement/deviceEnrollmentConfigurations
+
+GET https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?$filter=userPrincipalName eq '{upn}'&$count=true`,
+      note:"Enrollment restriction priority matters — the LOWEST priority number wins when a user is in scope for more than one restriction policy, which trips people up when a more permissive policy seems to have no effect."
+    },
+    {
+      title:"Pull a user's recent sign-in log for a support ticket",
+      pain:"A user says they 'can't sign in' and Support needs the actual sign-in log entries — success/failure, location, app, error code — rather than asking the user to describe what they saw on screen.",
+      tags:["sign-in","logs","troubleshoot","support"],
+      risk:"safe",
+      module:"Microsoft.Graph.Reports",
+      perm:"AuditLog.Read.All",
+      ps:`Connect-MgGraph -Scopes "AuditLog.Read.All"
+
+$upn = "user@contoso.com"
+$since = (Get-Date).AddDays(-2).ToString("yyyy-MM-ddTHH:mm:ssZ")
+
+$signIns = Get-MgAuditLogSignIn -Filter "userPrincipalName eq '$upn' and createdDateTime ge $since" -All
+
+$signIns |
+  Select-Object CreatedDateTime, AppDisplayName, ClientAppUsed, Status, IpAddress,
+    @{N="City";E={$_.Location.City}},
+    @{N="ErrorCode";E={$_.Status.ErrorCode}},
+    @{N="FailureReason";E={$_.Status.FailureReason}} |
+  Sort-Object CreatedDateTime -Descending |
+  Format-Table -AutoSize`,
+      graph:`GET https://graph.microsoft.com/v1.0/auditLogs/signIns?$filter=userPrincipalName eq '{upn}' and createdDateTime ge {isoTimestamp}`,
+      note:"Sign-in logs typically retain 30 days (7 for some tenant tiers) — pull them promptly when a ticket comes in, since you cannot go back and re-fetch what's already rolled off retention."
+    },
+    {
+      title:"Check why a specific app won't install for one user",
+      pain:"One person on a rollout reports the app never installed while everyone else in the same group got it — you need that single user's install status and any error code, not the whole rollout's aggregate numbers again.",
+      tags:["apps","troubleshoot","install status","user"],
+      risk:"safe",
+      module:"Microsoft.Graph.DeviceManagement",
+      perm:"DeviceManagementApps.Read.All",
+      ps:`Connect-MgGraph -Scopes "DeviceManagementApps.Read.All"
+
+$appId = "&lt;mobile-app-id&gt;"
+$upn = "user@contoso.com"
+
+$statuses = Get-MgDeviceAppManagementMobileAppDeviceStatus -MobileAppId $appId -All
+$mine = $statuses | Where-Object UserName -eq $upn
+
+if ($mine) {
+    $mine | Select-Object DeviceName, InstallState, InstallStateDetail, LastSyncDateTime | Format-List
+} else {
+    Write-Warning "No install status record for $upn on this app — check the app's assignment covers a group this user is actually in."
+}`,
+      graph:`GET https://graph.microsoft.com/v1.0/deviceAppManagement/mobileApps/{mobileAppId}/deviceStatuses?$filter=userName eq '{upn}'`,
+      note:"No record at all (rather than a failed state) almost always means an assignment/scope gap, not an install failure — check group membership and assignment filters before assuming it's a device-side problem."
+    }
+  ]
+},
+{
+  cat:"Security & Access Reviews",
+  glyph:"⛨",
+  items:[
+    {
+      title:"Stale guest accounts with no sign-in activity",
+      pain:"External guest accounts from long-finished projects accumulate and nobody prunes them, quietly expanding the tenant's external attack surface with zero ongoing business justification.",
+      tags:["guest","stale","security","cleanup"],
+      risk:"safe",
+      module:"Microsoft.Graph.Users",
+      perm:"User.Read.All, AuditLog.Read.All",
+      ps:`Connect-MgGraph -Scopes "User.Read.All","AuditLog.Read.All"
+
+$cutoff = (Get-Date).AddDays(-90)
+$guests = Get-MgUser -Filter "userType eq 'Guest'" -All -Property DisplayName,UserPrincipalName,SignInActivity,CreatedDateTime
+
+$stale = $guests | Where-Object {
+    -not $_.SignInActivity.LastSignInDateTime -or $_.SignInActivity.LastSignInDateTime -lt $cutoff
+}
+
+$stale |
+  Select-Object DisplayName, UserPrincipalName, CreatedDateTime,
+    @{N="LastSignIn";E={$_.SignInActivity.LastSignInDateTime}} |
+  Export-Csv ".\\stale-guest-report.csv" -NoTypeInformation
+
+Write-Host "$($stale.Count) of $($guests.Count) guest accounts inactive 90+ days"`,
+      graph:`GET https://graph.microsoft.com/v1.0/users?$filter=userType eq 'Guest'&$select=displayName,userPrincipalName,signInActivity,createdDateTime`,
+      note:"Pair this with an access review policy in Entra ID Governance for ongoing enforcement — this script is the one-time audit, not a replacement for a recurring review process."
+    },
+    {
+      title:"Admin role holders with no recent sign-in",
+      pain:"Privileged role assignments (Global Admin, Intune Admin, etc.) held by accounts that haven't signed in for months are exactly the kind of dormant-but-privileged account attackers look for.",
+      tags:["rbac","admin","security","dormant"],
+      risk:"safe",
+      module:"Microsoft.Graph.Identity.Governance",
+      perm:"RoleManagement.Read.Directory, AuditLog.Read.All",
+      ps:`Connect-MgGraph -Scopes "RoleManagement.Read.Directory","AuditLog.Read.All"
+
+$roleAssignments = Get-MgRoleManagementDirectoryRoleAssignment -All -ExpandProperty Principal
+
+$report = foreach ($ra in $roleAssignments) {
+    $principal = $ra.Principal.AdditionalProperties
+    if ($principal.'@odata.type' -eq '#microsoft.graph.user') {
+        $user = Get-MgUser -UserId $ra.PrincipalId -Property SignInActivity -ErrorAction SilentlyContinue
+        [PSCustomObject]@{
+            User        = $principal.userPrincipalName
+            RoleId      = $ra.RoleDefinitionId
+            LastSignIn  = $user.SignInActivity.LastSignInDateTime
+        }
+    }
+}
+
+$report | Sort-Object LastSignIn | Export-Csv ".\\admin-role-signin-report.csv" -NoTypeInformation`,
+      graph:`GET https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments?$expand=principal
+
+GET https://graph.microsoft.com/v1.0/users/{userId}?$select=signInActivity`,
+      note:"Resolve RoleId to a friendly name with a follow-up Get-MgRoleManagementDirectoryRoleDefinition call — the raw GUID isn't reviewable on its own in a report handed to security leadership."
+    },
+    {
+      title:"MFA registration gaps across the tenant",
+      pain:"A push to enforce MFA everywhere needs a starting baseline — exactly which enabled accounts have zero MFA methods registered — before you can safely tighten Conditional Access without locking people out.",
+      tags:["mfa","security","gap","audit"],
+      risk:"safe",
+      module:"Microsoft.Graph.Reports",
+      perm:"Reports.Read.All, AuditLog.Read.All",
+      ps:`Connect-MgGraph -Scopes "Reports.Read.All","AuditLog.Read.All"
+
+$detail = Get-MgReportAuthenticationMethodUserRegistrationDetail -All
+
+$gaps = $detail | Where-Object { $_.IsMfaRegistered -eq $false -and $_.UserType -eq "member" }
+
+$gaps |
+  Select-Object UserPrincipalName, IsMfaRegistered, MethodsRegistered |
+  Export-Csv ".\\mfa-registration-gap-report.csv" -NoTypeInformation
+
+Write-Host "$($gaps.Count) member accounts with no MFA method registered"`,
+      graph:`GET https://graph.microsoft.com/v1.0/reports/authenticationMethods/userRegistrationDetails?$filter=isMfaRegistered eq false`,
+      note:"Filter UserType to 'member' unless you also want guests in scope — guest MFA is frequently enforced by the guest's HOME tenant instead, which shows as 'not registered' here even when the user is fully MFA-protected."
+    },
+    {
+      title:"Risky sign-ins export for SOC follow-up",
+      pain:"Identity Protection flags risky sign-ins in its own blade, but the SOC team wants them exported alongside the sign-in detail (IP, location, risk reasons) to correlate with their own SIEM instead of pivoting through the portal.",
+      tags:["risky sign-in","security","identity protection","soc"],
+      risk:"safe",
+      module:"Microsoft.Graph.Identity.SignIns",
+      perm:"IdentityRiskEvent.Read.All, AuditLog.Read.All",
+      ps:`Connect-MgGraph -Scopes "IdentityRiskEvent.Read.All","AuditLog.Read.All"
+
+$since = (Get-Date).AddDays(-7).ToString("yyyy-MM-ddTHH:mm:ssZ")
+$riskySignIns = Get-MgAuditLogSignIn -Filter "riskLevelDuringSignIn ne 'none' and createdDateTime ge $since" -All
+
+$riskySignIns |
+  Select-Object CreatedDateTime, UserPrincipalName, AppDisplayName, IpAddress,
+    RiskLevelDuringSignIn, RiskState,
+    @{N="RiskDetail";E={$_.RiskDetail}},
+    @{N="City";E={$_.Location.City}}, @{N="Country";E={$_.Location.CountryOrRegion}} |
+  Export-Csv ".\\risky-signins-$(Get-Date -Format yyyy-MM-dd).csv" -NoTypeInformation`,
+      graph:`GET https://graph.microsoft.com/v1.0/auditLogs/signIns?$filter=riskLevelDuringSignIn ne 'none' and createdDateTime ge {isoTimestamp}`,
+      note:"riskLevelDuringSignIn reflects real-time risk at sign-in time; riskLevelAggregated (on the user object) is Identity Protection's cumulative score — pull both if the SOC wants the full picture, not just this point-in-time view."
+    }
+  ]
+}
+];
+
+// ---------- Render ----------
+const svgChev = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>';
+const svgStar = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+const svgStarFilled = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
+const svgCopy = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+const svgCheck = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
+
+function escapeHtml(str){
+  return str.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// Build the app-only (client credentials) variant of a PowerShell SDK script.
+// Every script in DATA starts with a single `Connect-MgGraph -Scopes ...` line
+// (delegated auth). This swaps just that line for a certificate-free client
+// secret connection using tenant ID / client ID / client secret, and leaves
+// the rest of the script body untouched.
+const APP_ONLY_CONNECT_BLOCK = `# App-only auth — client credentials flow (no signed-in user)
+# Requires the scope(s) above to be granted as APPLICATION permissions
+# (with admin consent) on the app registration, not just Delegated.
+$tenantId     = "&lt;tenant-id&gt;"
+$clientId     = "&lt;client-id&gt;"
+$clientSecret = "&lt;client-secret&gt;"   # pull from a secret store — never hardcode in a committed script
+
+$secureSecret = ConvertTo-SecureString $clientSecret -AsPlainText -Force
+$credential   = New-Object System.Management.Automation.PSCredential($clientId, $secureSecret)
+
+Connect-MgGraph -TenantId $tenantId -ClientSecretCredential $credential`;
+
+function buildAppOnlyScript(item){
+  // Replace the leading Connect-MgGraph -Scopes (...) statement — which may
+  // span one or more quoted scope arguments on the same line — with the
+  // app-only connect block. Falls back to prepending if the pattern isn't found.
+  const connectLineRe = /^Connect-MgGraph -Scopes[^\n]*/;
+  if (connectLineRe.test(item.ps)){
+    return item.ps.replace(connectLineRe, APP_ONLY_CONNECT_BLOCK);
+  }
+  return APP_ONLY_CONNECT_BLOCK + '\n\n' + item.ps;
+}
+
+function flatten(){
+  let idx = 0;
+  const flat = [];
+  DATA.forEach(group => {
+    group.items.forEach(item => {
+      idx++;
+      flat.push({ ...item, cat: group.cat, glyph: group.glyph, n: idx });
+    });
+  });
+  return flat;
+}
+const ALL = flatten();
+const ALL_TAGS = [...new Set(ALL.flatMap(i => i.tags))].sort();
+
+const sidenav = document.getElementById('sidenav');
+const resultsEl = document.getElementById('results');
+const statEl = document.getElementById('stat');
+const stat2El = document.getElementById('stat2');
+const emptyEl = document.getElementById('emptyState');
+const searchEl = document.getElementById('search');
+const sortSelect = document.getElementById('sortSelect');
+const activeFiltersEl = document.getElementById('activeFilters');
+
+const ALL_MODULES = [...new Set(ALL.map(i => i.module).filter(Boolean).flatMap(m => m.split(',').map(s=>s.trim())))].sort();
+const ALL_PERMS = [...new Set(ALL.flatMap(i => i.perm.split(',').map(s=>s.trim())))].sort();
+
+// Facet state: each facet is a Set of selected option values (OR within a facet, AND across facets)
+const facetState = {
+  cat: new Set(),
+  risk: new Set(),
+  tag: new Set(),
+  module: new Set(),
+  perm: new Set(),
+};
+let favOnly = false;
+let sortMode = 'default';
+let tagFilterQuery = '';
+let permFilterQuery = '';
+let tagsExpanded = false;
+let permsExpanded = false;
+
+const FACET_LABELS = { cat:'Category', risk:'Risk', tag:'Tag', module:'Module', perm:'Permission scope' };
+const facetCollapsed = { cat:false, risk:false, tag:false, module:true, perm:true };
+
+// ---------- Favorites (localStorage) ----------
+const FAV_KEY = 'graphline_favorites';
+function loadFavs(){
+  try { return new Set(JSON.parse(localStorage.getItem(FAV_KEY) || '[]')); }
+  catch(e){ return new Set(); }
+}
+function saveFavs(set){
+  try { localStorage.setItem(FAV_KEY, JSON.stringify([...set])); } catch(e){}
+}
+let favorites = loadFavs();
+
+// ---------- Ratings (localStorage) ----------
+// Data model, per script id (item.n):
+//   ratings[n] = { total: <sum of all votes>, count: <number of votes> }
+// The current browser's own vote is tracked separately in myVotes so a
+// visitor can see/change their vote without it inflating the total twice.
+// NOTE: this is a client-side, per-browser store — there is no backend here,
+// so counts reflect votes cast in THIS browser profile only. Swap loadRatings/
+// saveRatings for fetch() calls to a real API to make this a shared, cross-
+// visitor aggregate without touching any of the rendering code below.
+const RATINGS_KEY = 'graphline_ratings_v1';
+const MY_VOTES_KEY = 'graphline_my_votes_v1';
+
+function loadRatings(){
+  try { return JSON.parse(localStorage.getItem(RATINGS_KEY) || '{}'); }
+  catch(e){ return {}; }
+}
+function saveRatings(obj){
+  try { localStorage.setItem(RATINGS_KEY, JSON.stringify(obj)); } catch(e){}
+}
+function loadMyVotes(){
+  try { return JSON.parse(localStorage.getItem(MY_VOTES_KEY) || '{}'); }
+  catch(e){ return {}; }
+}
+function saveMyVotes(obj){
+  try { localStorage.setItem(MY_VOTES_KEY, JSON.stringify(obj)); } catch(e){}
+}
+let ratings = loadRatings();
+let myVotes = loadMyVotes();
+
+function getRatingStats(id){
+  const r = ratings[id] || { total: 0, count: 0 };
+  const avg = r.count ? r.total / r.count : 0;
+  return { avg, count: r.count, myVote: myVotes[id] || 0 };
+}
+
+// Cast or change a vote for a script. If the visitor already voted, their
+// previous score is removed from the running total before the new one is
+// added, so changing a 3-star vote to a 5-star doesn't double-count.
+function castVote(id, stars){
+  const r = ratings[id] || { total: 0, count: 0 };
+  const previous = myVotes[id] || 0;
+  if (previous > 0){
+    r.total = r.total - previous + stars;
+  } else {
+    r.total += stars;
+    r.count += 1;
+  }
+  ratings[id] = r;
+  myVotes[id] = stars;
+  saveRatings(ratings);
+  saveMyVotes(myVotes);
+}
+
+function clearVote(id){
+  const r = ratings[id];
+  const previous = myVotes[id] || 0;
+  if (r && previous > 0){
+    r.total -= previous;
+    r.count = Math.max(0, r.count - 1);
+    ratings[id] = r;
+    saveRatings(ratings);
+  }
+  delete myVotes[id];
+  saveMyVotes(myVotes);
+}
+
+function updateQuickStats(){
+  document.getElementById('qsTotal').textContent = ALL.length;
+  document.getElementById('qsCats').textContent = DATA.length;
+  document.getElementById('qsDanger').textContent = ALL.filter(i => i.risk === 'destructive').length;
+  document.getElementById('qsFav').textContent = favorites.size;
+}
+
+const svgCheckSmall = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+const svgFChev = '<svg class="fchev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>';
+
+// Count how many results WOULD match if we toggled a given facet option on,
+// given every OTHER facet's current selection (classic faceted-search UX).
+function countWithFacetOption(facetKey, value){
+  return ALL.filter(i => matchesAllFacetsExcept(i, facetKey, value)).length;
+}
+function matchesAllFacetsExcept(item, exceptKey, forceValue){
+  // category
+  const catOk = exceptKey === 'cat'
+    ? item.cat === forceValue
+    : (facetState.cat.size === 0 || facetState.cat.has(item.cat));
+  if (!catOk) return false;
+  // risk
+  const riskOk = exceptKey === 'risk'
+    ? item.risk === forceValue
+    : (facetState.risk.size === 0 || facetState.risk.has(item.risk));
+  if (!riskOk) return false;
+  // tag
+  const tagOk = exceptKey === 'tag'
+    ? item.tags.includes(forceValue)
+    : (facetState.tag.size === 0 || item.tags.some(t => facetState.tag.has(t)));
+  if (!tagOk) return false;
+  // module
+  const itemModules = (item.module||'').split(',').map(s=>s.trim());
+  const modOk = exceptKey === 'module'
+    ? itemModules.includes(forceValue)
+    : (facetState.module.size === 0 || itemModules.some(m => facetState.module.has(m)));
+  if (!modOk) return false;
+  // perm
+  const itemPerms = item.perm.split(',').map(s=>s.trim());
+  const permOk = exceptKey === 'perm'
+    ? itemPerms.includes(forceValue)
+    : (facetState.perm.size === 0 || itemPerms.some(p => facetState.perm.has(p)));
+  if (!permOk) return false;
+  return true;
+}
+
+function facetOptionRow({key, value, label, count, active, kind, colorDot}){
+  const box = kind === 'radioish'
+    ? `<span class="fo-dot" style="background:${colorDot}"></span>`
+    : `<span class="fo-box">${svgCheckSmall}</span>`;
+  const disabled = count === 0 && !active;
+  return `<button class="facet-opt ${active?'active':''} ${disabled?'zero':''}" data-facet="${key}" data-value="${escapeHtml(value)}" ${disabled?'aria-disabled="true"':''}>
+    ${box}
+    <span class="fo-label">${escapeHtml(label)}</span>
+    <span class="fo-count">${count}</span>
+  </button>`;
+}
+
+function renderSidebar(){
+  const catCounts = DATA.map(g => ({
+    name: g.cat, count: countWithFacetOption('cat', g.cat)
+  }));
+
+  const riskOptions = [
+    { value:'safe', label:'Safe / read-only', dot:'var(--safe)' },
+    { value:'destructive', label:'Destructive', dot:'var(--danger)' },
+  ];
+
+  let tagPool = ALL_TAGS;
+  if (tagFilterQuery) tagPool = tagPool.filter(t => t.includes(tagFilterQuery.toLowerCase()));
+  const tagCounts = tagPool.map(t => ({ t, count: countWithFacetOption('tag', t) }))
+    .sort((a,b) => facetState.tag.has(a.t) === facetState.tag.has(b.t) ? b.count - a.count : (facetState.tag.has(a.t) ? -1 : 1));
+  const visibleTags = tagsExpanded ? tagCounts : tagCounts.slice(0, 8);
+
+  let permPool = ALL_PERMS;
+  if (permFilterQuery) permPool = permPool.filter(p => p.toLowerCase().includes(permFilterQuery.toLowerCase()));
+  const permCounts = permPool.map(p => ({ p, count: countWithFacetOption('perm', p) }))
+    .sort((a,b) => facetState.perm.has(a.p) === facetState.perm.has(b.p) ? b.count - a.count : (facetState.perm.has(a.p) ? -1 : 1));
+  const visiblePerms = permsExpanded ? permCounts : permCounts.slice(0, 6);
+
+  const moduleCounts = ALL_MODULES.map(m => ({ m, count: countWithFacetOption('module', m) }))
+    .sort((a,b) => b.count - a.count);
+
+  sidenav.innerHTML = `
+    <div class="facet ${facetCollapsed.cat?'collapsed':''}" data-facet-group="cat">
+      <button class="facet-head" data-toggle="cat"><span>Category</span>${svgFChev}</button>
+      <div class="facet-body">
+        ${facetOptionRow({key:'cat', value:'', label:'All categories', count:ALL.length, active:facetState.cat.size===0, kind:'radioish', colorDot:'var(--accent-2)'})}
+        ${catCounts.map(c => facetOptionRow({key:'cat', value:c.name, label:c.name, count:c.count, active:facetState.cat.has(c.name)})).join('')}
+      </div>
+    </div>
+
+    <div class="facet ${facetCollapsed.risk?'collapsed':''}" data-facet-group="risk">
+      <button class="facet-head" data-toggle="risk"><span>Risk level</span>${svgFChev}</button>
+      <div class="facet-body">
+        ${riskOptions.map(r => facetOptionRow({key:'risk', value:r.value, label:r.label, count:countWithFacetOption('risk', r.value), active:facetState.risk.has(r.value), kind:'radioish', colorDot:r.dot})).join('')}
+      </div>
+    </div>
+
+    <div class="facet ${facetCollapsed.tag?'collapsed':''}" data-facet-group="tag">
+      <button class="facet-head" data-toggle="tag"><span>Tags</span>${svgFChev}</button>
+      <div class="facet-body">
+        <input class="facet-search" id="tagFacetSearch" placeholder="Filter tags…" value="${escapeHtml(tagFilterQuery)}">
+        ${visibleTags.map(({t,count}) => facetOptionRow({key:'tag', value:t, label:'#'+t, count, active:facetState.tag.has(t)})).join('')}
+        ${tagCounts.length > 8 ? `<button class="facet-more" id="tagsMoreBtn">${tagsExpanded ? 'Show less' : `+ ${tagCounts.length - 8} more`}</button>` : ''}
+      </div>
+    </div>
+
+    <div class="facet ${facetCollapsed.module?'collapsed':''}" data-facet-group="module">
+      <button class="facet-head" data-toggle="module"><span>SDK module required</span>${svgFChev}</button>
+      <div class="facet-body">
+        ${moduleCounts.map(({m,count}) => facetOptionRow({key:'module', value:m, label:m.replace('Microsoft.Graph.',''), count, active:facetState.module.has(m)})).join('')}
+      </div>
+    </div>
+
+    <div class="facet ${facetCollapsed.perm?'collapsed':''}" data-facet-group="perm">
+      <button class="facet-head" data-toggle="perm"><span>Permission scope</span>${svgFChev}</button>
+      <div class="facet-body">
+        <input class="facet-search" id="permFacetSearch" placeholder="Filter scopes…" value="${escapeHtml(permFilterQuery)}">
+        ${visiblePerms.map(({p,count}) => facetOptionRow({key:'perm', value:p, label:p, count, active:facetState.perm.has(p)})).join('')}
+        ${permCounts.length > 6 ? `<button class="facet-more" id="permsMoreBtn">${permsExpanded ? 'Show less' : `+ ${permCounts.length - 6} more`}</button>` : ''}
+      </div>
+    </div>
+
+    <div class="facet" data-facet-group="fav" style="border-bottom:none;">
+      ${facetOptionRow({key:'fav', value:'fav', label:'★ Favorites only', count:favorites.size, active:favOnly})}
+    </div>
+  `;
+
+  attachFacetEvents();
+}
+
+function attachFacetEvents(){
+  sidenav.querySelectorAll('.facet-head').forEach(head => {
+    head.addEventListener('click', () => {
+      const key = head.getAttribute('data-toggle');
+      facetCollapsed[key] = !facetCollapsed[key];
+      renderSidebar();
+    });
+  });
+
+  sidenav.querySelectorAll('.facet-opt[data-facet]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.getAttribute('data-facet');
+      const value = btn.getAttribute('data-value');
+      if (key === 'fav'){
+        favOnly = !favOnly;
+        renderSidebar(); renderResults();
+        return;
+      }
+      if (key === 'cat' && value === ''){
+        facetState.cat.clear();
+      } else {
+        const set = facetState[key];
+        if (set.has(value)) set.delete(value); else set.add(value);
+      }
+      renderSidebar();
+      renderResults();
+    });
+  });
+
+  const tagSearch = document.getElementById('tagFacetSearch');
+  if (tagSearch){
+    tagSearch.addEventListener('click', e => e.stopPropagation());
+    tagSearch.addEventListener('input', () => { tagFilterQuery = tagSearch.value; renderSidebar(); });
+  }
+  const permSearch = document.getElementById('permFacetSearch');
+  if (permSearch){
+    permSearch.addEventListener('click', e => e.stopPropagation());
+    permSearch.addEventListener('input', () => { permFilterQuery = permSearch.value; renderSidebar(); });
+  }
+  const tagsMoreBtn = document.getElementById('tagsMoreBtn');
+  if (tagsMoreBtn) tagsMoreBtn.addEventListener('click', () => { tagsExpanded = !tagsExpanded; renderSidebar(); });
+  const permsMoreBtn = document.getElementById('permsMoreBtn');
+  if (permsMoreBtn) permsMoreBtn.addEventListener('click', () => { permsExpanded = !permsExpanded; renderSidebar(); });
+}
+
+function renderActiveFilters(){
+  const chips = [];
+  facetState.cat.forEach(v => chips.push({ key:'cat', value:v, label:`Category: ${v}` }));
+  facetState.risk.forEach(v => chips.push({ key:'risk', value:v, label:`Risk: ${v === 'safe' ? 'Safe' : 'Destructive'}` }));
+  facetState.tag.forEach(v => chips.push({ key:'tag', value:v, label:`#${v}` }));
+  facetState.module.forEach(v => chips.push({ key:'module', value:v, label:`Module: ${v.replace('Microsoft.Graph.','')}` }));
+  facetState.perm.forEach(v => chips.push({ key:'perm', value:v, label:`Scope: ${v}` }));
+  if (favOnly) chips.push({ key:'fav', value:'fav', label:'★ Favorites only' });
+  if (searchEl.value.trim()) chips.push({ key:'search', value:'', label:`Search: “${searchEl.value.trim()}”` });
+
+  if (!chips.length){ activeFiltersEl.innerHTML = ''; return; }
+
+  activeFiltersEl.innerHTML = chips.map(c =>
+    `<span class="afchip">${escapeHtml(c.label)}<span class="afx" data-rm="${c.key}" data-rmval="${escapeHtml(c.value)}">✕</span></span>`
+  ).join('') + `<button class="clear-filters" id="clearFilters">Clear all ×</button>`;
+
+  activeFiltersEl.querySelectorAll('.afx').forEach(x => {
+    x.addEventListener('click', () => {
+      const key = x.getAttribute('data-rm');
+      const val = x.getAttribute('data-rmval');
+      if (key === 'fav') favOnly = false;
+      else if (key === 'search') searchEl.value = '';
+      else facetState[key].delete(val);
+      renderSidebar();
+      renderResults();
+    });
+  });
+  const clearBtn = document.getElementById('clearFilters');
+  if (clearBtn) clearBtn.addEventListener('click', clearAllFilters);
+}
+
+function clearAllFilters(){
+  Object.values(facetState).forEach(s => s.clear());
+  favOnly = false;
+  sortMode = 'default';
+  searchEl.value = '';
+  sortSelect.value = 'default';
+  renderSidebar();
+  renderResults();
+}
+
+function cardHtml(item){
+  const isFav = favorites.has(item.n);
+  const riskBadge = item.risk === 'destructive'
+    ? `<span class="risk-badge destructive">Destructive</span>`
+    : `<span class="risk-badge safe">Safe</span>`;
+  return `
+  <div class="card ${isFav?'fav':''}" data-id="${item.n}" style="animation-delay:${Math.min(item.n * 18, 240)}ms">
+    <button class="card-head" aria-expanded="false">
+      <div class="card-num">${String(item.n).padStart(2,'0')}</div>
+      <div class="card-main">
+        <div class="card-title-row">
+          <p class="card-title">${escapeHtml(item.title)}</p>
+          ${riskBadge}
+        </div>
+        <p class="card-pain">${escapeHtml(item.pain)}</p>
+        <div class="card-tags">${item.tags.map(t=>`<span class="tag">#${escapeHtml(t)}</span>`).join('')}</div>
+      </div>
+      <div class="card-side-actions">
+        <span class="fav-btn ${isFav?'on':''}" data-fav="${item.n}" role="button" aria-label="Toggle favorite" tabindex="0">${isFav?svgStarFilled:svgStar}</span>
+        ${svgChev}
+      </div>
+    </button>
+    <div class="card-body">
+      <div class="quick-facts">
+        <div class="qf-item">
+          <span class="qf-label">Does</span>
+          <span class="qf-val">${escapeHtml(summarizeAction(item))}</span>
+        </div>
+        <div class="qf-item">
+          <span class="qf-label">Impact</span>
+          <span class="qf-val ${item.risk === 'destructive' ? 'qf-danger' : 'qf-safe'}">${item.risk === 'destructive' ? 'Changes tenant/device state — test first' : 'Read-only — safe to run anytime'}</span>
+        </div>
+        <div class="qf-item">
+          <span class="qf-label">Setup time</span>
+          <span class="qf-val">${estimateSetupTime(item)}</span>
+        </div>
+      </div>
+      <div class="perm-row">
+        <span class="perm-label">SCOPE</span><span class="perm-chip">${escapeHtml(item.perm)}</span>
+        ${item.module ? `<span class="perm-label">MODULE</span><span class="module-chip">${escapeHtml(item.module)}</span>` : ''}
+      </div>
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="ps">PowerShell (SDK)</button>
+        <button class="tab-btn" data-tab="graph">Graph API (raw)</button>
+        <button class="tab-btn" data-tab="app">App-only (Client ID / Secret)</button>
+      </div>
+      <div class="code-wrap" data-tab-panel="ps">
+        <button class="copy-btn" data-copy="ps">${svgCopy}<span>Copy</span></button>
+        <pre>${item.ps}</pre>
+      </div>
+      <div class="code-wrap hidden" data-tab-panel="graph">
+        <button class="copy-btn" data-copy="graph">${svgCopy}<span>Copy</span></button>
+        <pre>${item.graph}</pre>
+      </div>
+      <div class="code-wrap hidden" data-tab-panel="app">
+        <button class="copy-btn" data-copy="app">${svgCopy}<span>Copy</span></button>
+        <pre>${buildAppOnlyScript(item)}</pre>
+      </div>
+      <div class="app-only-note hidden" data-tab-panel="app">
+        <span class="app-warn">⚠</span> App-only auth needs this scope granted as an <b>Application permission</b> (with admin consent) in Entra ID — the same scope name may exist as Delegated-only for some Graph endpoints. Verify in the app registration's API permissions blade before relying on this in production.
+      </div>
+      ${item.note ? `<div class="note">${escapeHtml(item.note)}</div>` : ''}
+      ${ratingWidgetHtml(item)}
+    </div>
+  </div>`;
+}
+
+// Derive a short, plain-English "what this does" line from the item's own
+// data (title + tags) so every card gets a fast, scannable summary without
+// hand-authoring a new field for all 42+ entries.
+function summarizeAction(item){
+  const t = item.title.replace(/\s+—.*$/, '').trim();
+  return t.charAt(0).toUpperCase() + t.slice(1) + (/[.?!]$/.test(t) ? '' : '.');
+}
+
+// Rough, honest complexity signal: count of non-empty lines in the PS script.
+// This is a real proxy for "how much is going on here" rather than a vague label.
+function estimateSetupTime(item){
+  const lines = item.ps.split('\n').filter(l => l.trim().length).length;
+  if (lines <= 6) return '~2 min — copy, fill placeholders, run';
+  if (lines <= 14) return '~5 min — review before running';
+  return '~10 min — read fully, test in a pilot group first';
+}
+
+function ratingWidgetHtml(item){
+  const { avg, count, myVote } = getRatingStats(item.n);
+  const displayAvg = count ? avg.toFixed(1) : '—';
+  const starsHtml = [1,2,3,4,5].map(i => {
+    const filled = myVote ? i <= myVote : i <= Math.round(avg);
+    return `<span class="rw-star ${filled?'filled':''}" data-star="${i}" data-id="${item.n}" role="button" tabindex="0" aria-label="Rate ${i} star${i>1?'s':''}">${filled?svgStarFilled:svgStar}</span>`;
+  }).join('');
+
+  return `
+  <div class="rating-widget" data-rating-for="${item.n}">
+    <div class="rating-stars" data-star-row="${item.n}">${starsHtml}</div>
+    <div class="rating-summary">
+      <div class="rating-avg-row">
+        <span class="rating-avg">${displayAvg}</span>
+        <span class="rating-count">${count ? `${count} rating${count===1?'':'s'}` : 'No ratings yet — be the first'}</span>
+      </div>
+      <div class="rating-helpful" data-helpful="${item.n}">${helpfulLine(count)}</div>
+    </div>
+    ${myVote ? `<span class="rating-your-vote" data-your-vote="${item.n}">${svgCheck} You rated ${myVote}★ <button class="rating-clear" data-clear="${item.n}">undo</button></span>` : `<span class="rating-cta">Rate this script</span>`}
+    <span class="rating-toast" data-toast="${item.n}">Saved</span>
+  </div>`;
+}
+
+function helpfulLine(count){
+  if (!count) return 'Ratings help other admins pick the right script fast.';
+  if (count === 1) return '1 admin found this useful.';
+  return `${count} admins found this useful.`;
+}
+
+function getFilteredItems(){
+  const q = searchEl.value.trim().toLowerCase();
+  let items = ALL.filter(i => matchesAllFacetsExcept(i, null, null));
+
+  if (favOnly){
+    items = items.filter(i => favorites.has(i.n));
+  }
+  if (q){
+    const terms = q.split(/\s+/).filter(Boolean);
+    items = items.filter(i => {
+      const haystack = [i.title, i.pain, i.cat, i.perm, i.module||'', ...i.tags].join(' ').toLowerCase();
+      return terms.every(t => haystack.includes(t));
+    });
+  }
+
+  if (sortMode === 'az') items = [...items].sort((a,b)=>a.title.localeCompare(b.title));
+  else if (sortMode === 'za') items = [...items].sort((a,b)=>b.title.localeCompare(a.title));
+  else if (sortMode === 'category') items = [...items].sort((a,b)=>a.cat.localeCompare(b.cat) || a.n-b.n);
+  else if (sortMode === 'risk') items = [...items].sort((a,b)=> (a.risk===b.risk?0:(a.risk==='destructive'?-1:1)));
+
+  return items;
+}
+
+function renderResults(){
+  const items = getFilteredItems();
+  statEl.innerHTML = `<span class="live-dot"></span><b>${items.length}</b> of ${ALL.length} scripts`;
+  stat2El.innerHTML = `<b>${items.length}</b> result${items.length===1?'':'s'} <span style="opacity:.5">/ ${ALL.length} total</span>`;
+  renderActiveFilters();
+
+  if (items.length === 0){
+    resultsEl.innerHTML = '';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  emptyEl.style.display = 'none';
+
+  if (sortMode === 'az' || sortMode === 'za' || sortMode === 'risk'){
+    resultsEl.innerHTML = items.map(cardHtml).join('');
+  } else {
+    const byCat = {};
+    items.forEach(i => { (byCat[i.cat] = byCat[i.cat] || []).push(i); });
+    resultsEl.innerHTML = Object.keys(byCat).map(cat => `
+      <div class="group-title"><span class="glyph">${byCat[cat][0].glyph}</span>${escapeHtml(cat)}</div>
+      ${byCat[cat].map(cardHtml).join('')}
+    `).join('');
+  }
+
+  attachCardEvents();
+  updateQuickStats();
+}
+
+function toggleCard(card){
+  const willOpen = !card.classList.contains('open');
+  card.classList.toggle('open');
+  const head = card.querySelector('.card-head');
+  head.setAttribute('aria-expanded', String(willOpen));
+  const body = card.querySelector('.card-body');
+  if (willOpen){
+    body.style.maxHeight = body.scrollHeight + 'px';
+    history.replaceState(null, '', '#card-' + card.getAttribute('data-id'));
+  } else {
+    body.style.maxHeight = '0px';
+  }
+}
+
+function attachCardEvents(){
+  resultsEl.querySelectorAll('.card-head').forEach(head => {
+    head.addEventListener('click', (e) => {
+      if (e.target.closest('.fav-btn')) return;
+      toggleCard(head.closest('.card'));
+    });
+  });
+
+  resultsEl.querySelectorAll('.fav-btn').forEach(btn => {
+    const handler = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const id = Number(btn.getAttribute('data-fav'));
+      if (favorites.has(id)) favorites.delete(id); else favorites.add(id);
+      saveFavs(favorites);
+      const card = btn.closest('.card');
+      const wasOpen = card.classList.contains('open');
+      renderResults();
+      if (wasOpen){
+        const reopened = resultsEl.querySelector(`.card[data-id="${id}"]`);
+        if (reopened){
+          reopened.classList.add('open');
+          reopened.querySelector('.card-head').setAttribute('aria-expanded', 'true');
+          const body = reopened.querySelector('.card-body');
+          body.style.maxHeight = body.scrollHeight + 'px';
+        }
+      }
+    };
+    btn.addEventListener('click', handler);
+    btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') handler(e); });
+  });
+
+  resultsEl.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const body = btn.closest('.card-body');
+      body.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const tab = btn.getAttribute('data-tab');
+      body.querySelectorAll('[data-tab-panel]').forEach(p => {
+        p.classList.toggle('hidden', p.getAttribute('data-tab-panel') !== tab);
+      });
+      const card = btn.closest('.card');
+      if (card.classList.contains('open')){
+        body.style.maxHeight = body.scrollHeight + 'px';
+      }
+    });
+  });
+
+  resultsEl.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const pre = btn.parentElement.querySelector('pre');
+      const text = pre.textContent;
+      const label = btn.querySelector('span');
+      navigator.clipboard.writeText(text).then(() => {
+        const original = label.textContent;
+        label.textContent = 'Copied';
+        btn.innerHTML = `${svgCheck}<span>Copied</span>`;
+        btn.classList.add('copied');
+        setTimeout(() => { btn.innerHTML = `${svgCopy}<span>${original}</span>`; btn.classList.remove('copied'); }, 1500);
+      }).catch(() => {
+        label.textContent = 'Select & copy manually';
+      });
+    });
+  });
+
+}
+
+// Re-renders just the inside of one rating widget (star row, average, count,
+// vote badge) without touching the rest of the card — keeps the card open
+// and avoids a full list re-render every time someone clicks a star.
+function refreshRatingWidget(id){
+  const widget = resultsEl.querySelector(`.rating-widget[data-rating-for="${id}"]`);
+  if (!widget) return;
+  const item = ALL.find(i => i.n === id);
+  if (!item) return;
+  widget.outerHTML = ratingWidgetHtml(item);
+}
+
+function flashToast(id){
+  const toast = resultsEl.querySelector(`[data-toast="${id}"]`);
+  if (!toast) return;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 1200);
+}
+
+// Event delegation for the rating widgets: bound ONCE on resultsEl instead of
+// per-star, so re-rendering a single widget's innerHTML never needs — and
+// never risks — re-attaching (and duplicating) listeners.
+resultsEl.addEventListener('click', (e) => {
+  const star = e.target.closest('.rw-star');
+  if (star){
+    e.stopPropagation();
+    const id = Number(star.getAttribute('data-id'));
+    const value = Number(star.getAttribute('data-star'));
+    castVote(id, value);
+    refreshRatingWidget(id);
+    flashToast(id);
+    return;
+  }
+  const clearBtn = e.target.closest('[data-clear]');
+  if (clearBtn){
+    e.stopPropagation();
+    const id = Number(clearBtn.getAttribute('data-clear'));
+    clearVote(id);
+    refreshRatingWidget(id);
+  }
+});
+
+resultsEl.addEventListener('keydown', (e) => {
+  const star = e.target.closest('.rw-star');
+  if (star && (e.key === 'Enter' || e.key === ' ')){
+    e.preventDefault(); e.stopPropagation();
+    const id = Number(star.getAttribute('data-id'));
+    const value = Number(star.getAttribute('data-star'));
+    castVote(id, value);
+    refreshRatingWidget(id);
+    flashToast(id);
+  }
+});
+
+resultsEl.addEventListener('mouseover', (e) => {
+  const star = e.target.closest('.rw-star');
+  if (!star) return;
+  const value = Number(star.getAttribute('data-star'));
+  const row = star.closest('.rating-stars');
+  row.querySelectorAll('.rw-star').forEach(s => {
+    const sv = Number(s.getAttribute('data-star'));
+    s.classList.toggle('preview', sv <= value && !s.classList.contains('filled'));
+  });
+});
+
+resultsEl.addEventListener('mouseout', (e) => {
+  const star = e.target.closest('.rw-star');
+  if (!star) return;
+  const row = star.closest('.rating-stars');
+  if (row && !row.contains(e.relatedTarget)){
+    row.querySelectorAll('.rw-star').forEach(s => s.classList.remove('preview'));
+  }
+});
+
+// ---------- Filter bar events ----------
+sortSelect.addEventListener('change', () => {
+  sortMode = sortSelect.value;
+  renderResults();
+});
+
+searchEl.addEventListener('input', () => {
+  renderSidebar();
+  renderResults();
+});
+
+// Keyboard shortcut: "/" focuses search
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && document.activeElement !== searchEl){
+    e.preventDefault();
+    searchEl.focus();
+  }
+  if (e.key === 'Escape' && document.activeElement === searchEl){
+    searchEl.value = '';
+    renderResults();
+  }
+});
+
+// ---------- Deep link on load ----------
+function openFromHash(){
+  const m = location.hash.match(/^#card-(\d+)$/);
+  if (!m) return;
+  const id = m[1];
+  requestAnimationFrame(() => {
+    const card = resultsEl.querySelector(`.card[data-id="${id}"]`);
+    if (card && !card.classList.contains('open')){
+      toggleCard(card);
+      card.scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+  });
+}
+
+renderSidebar();
+renderResults();
+updateQuickStats();
+openFromHash();
+window.addEventListener('hashchange', openFromHash);
+
+// ---------- Hero terminal: realistic typewriter loop ----------
+(function initHeroTerminal(){
+  const el = document.getElementById('heroTerminal');
+  if (!el) return;
+
+  const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const SCRIPT_LINES = [
+    { type:'prompt', text:'Connect-MgGraph -Scopes "DeviceManagementManagedDevices.Read.All"' },
+    { type:'out',    text:'Welcome to Microsoft Graph!' },
+    { type:'prompt', text:"Get-MgDeviceManagementManagedDevice -Filter \"complianceState eq 'noncompliant'\" -All" },
+    { type:'out',    text:'12 devices returned · exporting…' },
+    { type:'ok',     text:'✓ noncompliant-report.csv written' },
+    { type:'prompt', text:'Sync-MgDeviceManagementManagedDevice -ManagedDeviceId $id' },
+    { type:'ok',     text:'✓ Sync queued: DESKTOP-4F21A' },
+    { type:'comment',text:'# app-only run — no signed-in user' },
+    { type:'prompt', text:'Connect-MgGraph -TenantId $tenantId -ClientSecretCredential $cred' },
+    { type:'ok',     text:'✓ Connected as application' },
+  ];
+
+  if (reduceMotion){
+    el.innerHTML = SCRIPT_LINES.map(renderStaticLine).join('');
+    return;
+  }
+
+  function renderStaticLine(line){
+    const cls = line.type === 'prompt' ? 'ht-cmd' : line.type === 'ok' ? 'ht-ok' : line.type === 'comment' ? 'ht-comment' : '';
+    const prefix = line.type === 'prompt' ? '<span class="ht-prompt">PS &gt;</span> ' : '';
+    return `<div class="ht-line" style="opacity:1"><span class="${cls}">${prefix}${escapeHtml(line.text)}</span></div>`;
+  }
+
+  let lineIndex = 0;
+  let charIndex = 0;
+  let currentLineEl = null;
+  const TYPE_SPEED = 22;      // ms per character for typed (prompt) lines
+  const LINE_PAUSE = 380;     // pause after a line completes
+  const RESTART_PAUSE = 2600; // pause before looping back to the start
+
+  function startLine(){
+    if (lineIndex >= SCRIPT_LINES.length){
+      setTimeout(() => { el.innerHTML = ''; lineIndex = 0; startLine(); }, RESTART_PAUSE);
+      return;
+    }
+    const line = SCRIPT_LINES[lineIndex];
+    currentLineEl = document.createElement('div');
+    currentLineEl.className = 'ht-line';
+    el.appendChild(currentLineEl);
+
+    if (line.type === 'prompt'){
+      charIndex = 0;
+      currentLineEl.innerHTML = '<span class="ht-prompt">PS &gt;</span> <span class="ht-cmd"></span><span class="ht-cursor"></span>';
+      typeChar(line.text);
+    } else {
+      const cls = line.type === 'ok' ? 'ht-ok' : line.type === 'comment' ? 'ht-comment' : '';
+      currentLineEl.innerHTML = `<span class="${cls}">${escapeHtml(line.text)}</span>`;
+      el.scrollTop = el.scrollHeight;
+      lineIndex++;
+      setTimeout(startLine, LINE_PAUSE);
+    }
+  }
+
+  function typeChar(fullText){
+    const cmdSpan = currentLineEl.querySelector('.ht-cmd');
+    if (charIndex <= fullText.length){
+      cmdSpan.textContent = fullText.slice(0, charIndex);
+      charIndex++;
+      el.scrollTop = el.scrollHeight;
+      setTimeout(() => typeChar(fullText), TYPE_SPEED);
+    } else {
+      const cursor = currentLineEl.querySelector('.ht-cursor');
+      if (cursor) cursor.remove();
+      lineIndex++;
+      setTimeout(startLine, LINE_PAUSE);
+    }
+  }
+
+  startLine();
+})();
+</script>
+</body>
+</html>
